@@ -132,6 +132,20 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .photo-thumb{aspect-ratio:1;position:relative;cursor:pointer;overflow:hidden;background:var(--surface)}
 .photo-thumb img{width:100%;height:100%;object-fit:contain;background:var(--surface2);display:block}
 .photo-thumb .ph-time{position:absolute;bottom:5px;right:6px;font-size:10px;color:rgba(255,255,255,0.75);background:rgba(0,0,0,0.45);border-radius:5px;padding:1px 5px;font-weight:500}
+/* DAY LIST (ROW STYLE) */
+.day-row-list{display:flex;flex-direction:column;gap:10px}
+.day-row{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:16px;padding:8px;cursor:pointer}
+.day-row-thumb{position:relative;flex-shrink:0;width:52px;height:52px;border-radius:13px;overflow:hidden;background:var(--surface2)}
+.day-row-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.day-row-thumb .dr-cat-icon{position:absolute;top:3px;left:3px;font-size:11px;background:rgba(0,0,0,0.5);border-radius:6px;width:17px;height:17px;display:flex;align-items:center;justify-content:center}
+.day-row-body{flex:1;min-width:0}
+.day-row-title{display:flex;align-items:center;gap:6px;font-size:14.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.day-row-title .dr-cam{font-size:12px;opacity:0.6;flex-shrink:0}
+.day-row-sub{font-size:12px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.day-row-sub .dr-cat-label{color:var(--accent)}
+.day-row-amount{flex-shrink:0;font-size:14.5px;font-weight:700;margin-left:8px}
+.day-row-amount.expense{color:#ef4444}
+.day-row-amount.income{color:#22c55e}
 /* VIEWER */
 #viewer{position:fixed;inset:0;z-index:100;background:#000;display:none;flex-direction:column}
 #viewer.open{display:flex}
@@ -1324,11 +1338,20 @@ function renderDayListHtml(){
     else{const d=new Date(date+'T00:00:00');const days=['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];label=days[d.getDay()];}
     const d=new Date(date+'T00:00:00');
     const dateLabel=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
-    const gc=dayPhotos.length===1?'solo':dayPhotos.length===2?'duo':'';
-    const thumbs=dayPhotos.map(p=>{
-      const badge=p.amount>0?`<div class="ph-amount ${p.moneyType}">${p.moneyType==='expense'?'-':'+'}${maskAmount(formatVND(p.amount))}</div>`:'';
-      const catIcon=(p.amount>0&&p.category)?`<div class="ph-cat-icon">${getCatInfo(p.moneyType,p.category).icon}</div>`:'';
-      return`<div class="photo-thumb" onclick="openViewer('${p.id}')"><img src="${p.dataUrl}" alt="" loading="lazy"><div class="ph-time">${p.time}</div>${catIcon}${badge}</div>`;
+    const rows=dayPhotos.map(p=>{
+      const info=(p.amount>0&&p.category)?getCatInfo(p.moneyType,p.category):null;
+      const catIcon=info?`<div class="dr-cat-icon">${info.icon}</div>`:'';
+      const title=p.caption?p.caption:(info?info.label:'Giao dịch');
+      const catLabel=info?info.label:(p.moneyType==='income'?'Thu nhập':'Khác');
+      const amount=p.amount>0?`<div class="day-row-amount ${p.moneyType}">${p.moneyType==='expense'?'-':'+'}${maskAmount(formatVND(p.amount))}</div>`:'';
+      return`<div class="day-row" onclick="openViewer('${p.id}')">
+        <div class="day-row-thumb"><img src="${p.dataUrl}" alt="" loading="lazy">${catIcon}</div>
+        <div class="day-row-body">
+          <div class="day-row-title">${title} <span class="dr-cam">📷</span></div>
+          <div class="day-row-sub"><span class="dr-cat-label">${catLabel}</span> · ${p.time}</div>
+        </div>
+        ${amount}
+      </div>`;
     }).join('');
     const dayExpense=dayPhotos.filter(p=>p.moneyType==='expense').reduce((s,p)=>s+(p.amount||0),0);
     const dayIncome=dayPhotos.filter(p=>p.moneyType==='income').reduce((s,p)=>s+(p.amount||0),0);
@@ -1338,7 +1361,7 @@ function renderDayListHtml(){
       const cls=net>0?'income':net<0?'expense':'mixed';
       totalHtml=`<div class="day-total ${cls}">${maskAmount((net>0?'+':'')+(net!==0?formatVND(net):'0đ'))}</div>`;
     }
-    html+=`<div class="day-block"><div class="day-header"><div class="day-name">${label}</div><div class="day-date">${dateLabel}</div>${totalHtml}<div class="day-count">${dayPhotos.length} ảnh</div></div><div class="photo-grid ${gc}">${thumbs}</div></div>`;
+    html+=`<div class="day-block"><div class="day-header"><div class="day-name">${label}</div><div class="day-date">${dateLabel}</div>${totalHtml}<div class="day-count">${dayPhotos.length} ảnh</div></div><div class="day-row-list">${rows}</div></div>`;
   });
   return html;
 }
