@@ -1636,13 +1636,16 @@ function openPhotoFromCal(id){
 function isStandalonePWA(){
   return window.navigator.standalone===true || window.matchMedia('(display-mode: standalone)').matches;
 }
-// iOS Safari specifically (window.navigator.standalone only exists there). On iOS, doing the
-// Google/Facebook OAuth redirect *inside* the installed home-screen app is unreliable: WebKit
-// doesn't reliably keep the pending-sign-in state across the trip out to accounts.google.com and
-// back, so the app just lands back on the login screen even though nothing actually went wrong on
-// the user's end. The fix that works: kick the user out to real Safari to sign in there (localStorage,
-// where Firebase keeps the signed-in session, IS shared between Safari and the home-screen app for
-// the same site) — then they just reopen the app from the home screen and they're already signed in.
+// iOS Safari specifically (window.navigator.standalone only exists there).
+// NOTE: an earlier version of this file auto-triggered openInSafariForSignIn() below whenever
+// isIOSStandaloneApp() was true, INSTEAD of calling signInWithRedirect. That backfired: on iOS,
+// window.open()/<a target="_blank"> is itself unreliable at escaping the standalone container —
+// on many iOS versions it just reloads this same URL *inside* the app, which looked like the
+// login button doing nothing at all. signInWithRedirect (below, under isStandalonePWA) works fine
+// directly inside the standalone container in practice, so that's the default path again now.
+// openInSafariForSignIn()/copySafariLink() are kept only as an optional MANUAL fallback the user
+// can trigger themselves from the "login-safari-note" box, for the rare device where the redirect
+// really doesn't come back — never triggered automatically.
 function isIOSStandaloneApp(){
   return window.navigator.standalone===true;
 }
@@ -1683,10 +1686,6 @@ function initSafariLoginNote(){
 }
 function signInGoogle(){
   const provider=new firebase.auth.GoogleAuthProvider();
-  if(isIOSStandaloneApp()){
-    openInSafariForSignIn();
-    return;
-  }
   // signInWithPopup does not work reliably in an installed (standalone) PWA on iOS/Android —
   // the popup window loses its opener context, so login (and therefore cloud sync) silently fails.
   if(isStandalonePWA()){
@@ -1704,10 +1703,6 @@ function signInGoogle(){
 }
 function signInFacebook(){
   const provider=new firebase.auth.FacebookAuthProvider();
-  if(isIOSStandaloneApp()){
-    openInSafariForSignIn();
-    return;
-  }
   if(isStandalonePWA()){
     auth.signInWithRedirect(provider).catch(e=>{console.error(e);showToast('Đăng nhập thất bại: '+(e.code||e.message));});
     return;
