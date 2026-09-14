@@ -138,6 +138,13 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .tx-row-amount{font-size:14.5px;font-weight:700;flex-shrink:0;white-space:nowrap}
 .tx-row-amount.expense{color:#ef4444}
 .tx-row-amount.income{color:#22c55e}
+.day-nav{display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:16px;padding:10px 8px;margin-bottom:14px}
+.day-nav-arrow{width:34px;height:34px;border-radius:50%;border:none;background:var(--surface2);color:var(--text);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.day-nav-mid{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;min-width:0}
+.day-nav-date{font-size:15px;font-weight:700;white-space:nowrap}
+.day-nav-total{font-size:11.5px;font-weight:700;color:#ef4444;background:rgba(239,68,68,0.15);border-radius:10px;padding:3px 9px;white-space:nowrap}
+.day-nav-cal{font-size:13px;opacity:0.7}
+#day-date-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;border-radius:16px;overflow:hidden}
 .photo-grid.solo{grid-template-columns:1fr}
 .photo-grid.duo{grid-template-columns:repeat(2,1fr)}
@@ -1257,7 +1264,7 @@ function updateThumbPreview(){
   p.innerHTML=photos.length>0?`<img src="${photos[0].dataUrl}" alt="">`:'<span>📁</span>';
 }
 
-let galleryViewMode='month',amountsHidden=false;
+let galleryViewMode='month',amountsHidden=false,selectedDayStr=null;
 function greetingParts(){
   const h=new Date().getHours();
   if(h<11)return['Chào buổi sáng','🌤️'];
@@ -1320,51 +1327,73 @@ function renderGallery(){
 }
 
 function renderDayListHtml(){
+  const today=toDateStr(new Date());
+  if(!selectedDayStr)selectedDayStr=today;
   if(photos.length===0){
     return`<div class="empty-gallery"><div class="big-icon">📷</div><h3>Chưa có ảnh nào</h3><p>Chụp ảnh hoặc thêm giao dịch thủ công đầu tiên ngay hôm nay!</p></div>`;
   }
-  const groups={};
-  photos.forEach(p=>{if(!groups[p.date])groups[p.date]=[];groups[p.date].push(p);});
-  const today=toDateStr(new Date());
   const yesterday=toDateStr(new Date(Date.now()-86400000));
-  let html='';
-  Object.keys(groups).sort().reverse().forEach(date=>{
-    const dayPhotos=groups[date];
-    let label=date;
-    if(date===today)label='Hôm nay';
-    else if(date===yesterday)label='Hôm qua';
-    else{const d=new Date(date+'T00:00:00');const days=['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];label=days[d.getDay()];}
-    const d=new Date(date+'T00:00:00');
-    const dateLabel=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
-    const sortedDayPhotos=[...dayPhotos].sort((a,b)=>(b.time||'').localeCompare(a.time||''));
-    const thumbs=sortedDayPhotos.map(p=>{
-      const info=(p.amount>0&&p.category)?getCatInfo(p.moneyType,p.category):null;
-      const catLabel=info?info.label:(p.moneyType==='income'?'Thu nhập':'Chi tiêu');
-      const catEmoji=info?info.icon:(p.moneyType==='income'?'💰':'🧾');
-      const amountCls=p.moneyType==='expense'?'expense':'income';
-      const sign=p.moneyType==='expense'?'-':'+';
-      const thumbInner=p.dataUrl?`<img src="${p.dataUrl}" alt="" loading="lazy">`:`<div class="no-photo">${catEmoji}</div>`;
-      const capText=p.caption&&p.caption.trim()?p.caption.trim():catLabel;
-      return`<div class="tx-row" onclick="openViewer('${p.id}')">
-        <div class="tx-row-thumb${p.dataUrl?'':' no-photo'}">${thumbInner}</div>
-        <div class="tx-row-body">
-          <div class="tx-row-cat">${catEmoji} ${catLabel} ${p.dataUrl?'<span class="cam-ic">📷</span>':''}</div>
-          <div class="tx-row-sub">${capText} · ${p.time}</div>
-        </div>
-        <div class="tx-row-amount ${amountCls}">${maskAmount(sign+formatVND(p.amount||0))}</div>
-      </div>`;
-    }).join('');
-    const dayExpense=dayPhotos.filter(p=>p.moneyType==='expense').reduce((s,p)=>s+(p.amount||0),0);
-    const dayIncome=dayPhotos.filter(p=>p.moneyType==='income').reduce((s,p)=>s+(p.amount||0),0);
-    const net=dayIncome-dayExpense;
-    let totalHtml='';
-    if(dayExpense>0||dayIncome>0){
-      const cls=net>0?'income':net<0?'expense':'mixed';
-      totalHtml=`<div class="day-total ${cls}">${maskAmount((net>0?'+':'')+(net!==0?formatVND(net):'0đ'))}</div>`;
-    }
-    html+=`<div class="day-block"><div class="day-header"><div class="day-name">${label}</div><div class="day-date">${dateLabel}</div>${totalHtml}<div class="day-count">${dayPhotos.length} ảnh</div></div><div class="tx-list">${thumbs}</div></div>`;
-  });
-  return html;
+  const dayPhotos=photos.filter(p=>p.date===selectedDayStr);
+  const d=new Date(selectedDayStr+'T00:00:00');
+  let label=selectedDayStr;
+  if(selectedDayStr===today)label='Hôm nay';
+  else if(selectedDayStr===yesterday)label='Hôm qua';
+  else{const days=['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];label=days[d.getDay()];}
+  const dateLabel=`${d.getDate()} thg ${d.getMonth()+1}, ${d.getFullYear()}`;
+  const dayExpense=dayPhotos.filter(p=>p.moneyType==='expense').reduce((s,p)=>s+(p.amount||0),0);
+  const dayIncome=dayPhotos.filter(p=>p.moneyType==='income').reduce((s,p)=>s+(p.amount||0),0);
+  const net=dayIncome-dayExpense;
+  const totalPillCls=net<0?'expense':net>0?'income':'mixed';
+  const totalPillTxt=(dayExpense>0||dayIncome>0)?maskAmount((net>0?'+':'')+formatVND(Math.abs(net)))+'đ':'0đ';
+  let nav=`<div class="day-nav">
+    <button class="day-nav-arrow" onclick="changeSelectedDay(-1)">‹</button>
+    <div class="day-nav-mid" onclick="openDayPicker()">
+      <span class="day-nav-date">${label} · ${dateLabel}</span>
+      <span class="day-nav-total ${totalPillCls}">${totalPillTxt}</span>
+      <span class="day-nav-cal">▾</span>
+    </div>
+    <button class="day-nav-arrow" onclick="changeSelectedDay(1)">›</button>
+  </div>
+  <input type="date" id="day-date-input" value="${selectedDayStr}" onchange="onDayPicked(this.value)">`;
+
+  if(dayPhotos.length===0){
+    return nav+`<div class="empty-gallery"><div class="big-icon">🗓️</div><h3>Không có giao dịch</h3><p>Chưa có chi tiêu hay thu nhập nào trong ngày này.</p></div>`;
+  }
+  const sortedDayPhotos=[...dayPhotos].sort((a,b)=>(b.time||'').localeCompare(a.time||''));
+  const thumbs=sortedDayPhotos.map(p=>{
+    const info=(p.amount>0&&p.category)?getCatInfo(p.moneyType,p.category):null;
+    const catLabel=info?info.label:(p.moneyType==='income'?'Thu nhập':'Chi tiêu');
+    const catEmoji=info?info.icon:(p.moneyType==='income'?'💰':'🧾');
+    const amountCls=p.moneyType==='expense'?'expense':'income';
+    const sign=p.moneyType==='expense'?'-':'+';
+    const thumbInner=p.dataUrl?`<img src="${p.dataUrl}" alt="" loading="lazy">`:`<div class="no-photo">${catEmoji}</div>`;
+    const capText=p.caption&&p.caption.trim()?p.caption.trim():catLabel;
+    return`<div class="tx-row" onclick="openViewer('${p.id}')">
+      <div class="tx-row-thumb${p.dataUrl?'':' no-photo'}">${thumbInner}</div>
+      <div class="tx-row-body">
+        <div class="tx-row-cat">${catEmoji} ${catLabel} ${p.dataUrl?'<span class="cam-ic">📷</span>':''}</div>
+        <div class="tx-row-sub">${capText} · ${p.time}</div>
+      </div>
+      <div class="tx-row-amount ${amountCls}">${maskAmount(sign+formatVND(p.amount||0))}</div>
+    </div>`;
+  }).join('');
+  return nav+`<div class="tx-list">${thumbs}</div>`;
+}
+function changeSelectedDay(delta){
+  const d=new Date(selectedDayStr+'T00:00:00');
+  d.setDate(d.getDate()+delta);
+  selectedDayStr=toDateStr(d);
+  renderGallery();
+}
+function openDayPicker(){
+  const inp=document.getElementById('day-date-input');
+  if(!inp)return;
+  if(inp.showPicker)inp.showPicker();else inp.click();
+}
+function onDayPicked(val){
+  if(!val)return;
+  selectedDayStr=val;
+  renderGallery();
 }
 
 function renderMonthCalendarHtml(year,month){
