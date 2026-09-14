@@ -126,6 +126,18 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .day-name{font-size:15px;font-weight:600}
 .day-date{font-size:12px;color:var(--text2)}
 .day-count{margin-left:auto;font-size:11px;color:var(--accent);background:var(--accent-dim);border-radius:8px;padding:2px 7px}
+.tx-list{display:flex;flex-direction:column;gap:8px}
+.tx-row{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:16px;padding:8px 12px;cursor:pointer}
+.tx-row-thumb{width:52px;height:52px;border-radius:12px;flex-shrink:0;overflow:hidden;border:2px solid var(--border);background:var(--surface2)}
+.tx-row-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.tx-row-thumb.no-photo{display:flex;align-items:center;justify-content:center;font-size:20px}
+.tx-row-body{flex:1;min-width:0}
+.tx-row-cat{display:flex;align-items:center;gap:6px;font-size:14.5px;font-weight:600;color:var(--text)}
+.tx-row-cat .cam-ic{font-size:12px;opacity:0.7}
+.tx-row-sub{font-size:12px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-row-amount{font-size:14.5px;font-weight:700;flex-shrink:0;white-space:nowrap}
+.tx-row-amount.expense{color:#ef4444}
+.tx-row-amount.income{color:#22c55e}
 .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;border-radius:16px;overflow:hidden}
 .photo-grid.solo{grid-template-columns:1fr}
 .photo-grid.duo{grid-template-columns:repeat(2,1fr)}
@@ -1324,11 +1336,23 @@ function renderDayListHtml(){
     else{const d=new Date(date+'T00:00:00');const days=['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];label=days[d.getDay()];}
     const d=new Date(date+'T00:00:00');
     const dateLabel=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
-    const gc=dayPhotos.length===1?'solo':dayPhotos.length===2?'duo':'';
-    const thumbs=dayPhotos.map(p=>{
-      const badge=p.amount>0?`<div class="ph-amount ${p.moneyType}">${p.moneyType==='expense'?'-':'+'}${maskAmount(formatVND(p.amount))}</div>`:'';
-      const catIcon=(p.amount>0&&p.category)?`<div class="ph-cat-icon">${getCatInfo(p.moneyType,p.category).icon}</div>`:'';
-      return`<div class="photo-thumb" onclick="openViewer('${p.id}')"><img src="${p.dataUrl}" alt="" loading="lazy"><div class="ph-time">${p.time}</div>${catIcon}${badge}</div>`;
+    const sortedDayPhotos=[...dayPhotos].sort((a,b)=>(b.time||'').localeCompare(a.time||''));
+    const thumbs=sortedDayPhotos.map(p=>{
+      const info=(p.amount>0&&p.category)?getCatInfo(p.moneyType,p.category):null;
+      const catLabel=info?info.label:(p.moneyType==='income'?'Thu nhập':'Chi tiêu');
+      const catEmoji=info?info.icon:(p.moneyType==='income'?'💰':'🧾');
+      const amountCls=p.moneyType==='expense'?'expense':'income';
+      const sign=p.moneyType==='expense'?'-':'+';
+      const thumbInner=p.dataUrl?`<img src="${p.dataUrl}" alt="" loading="lazy">`:`<div class="no-photo">${catEmoji}</div>`;
+      const capText=p.caption&&p.caption.trim()?p.caption.trim():catLabel;
+      return`<div class="tx-row" onclick="openViewer('${p.id}')">
+        <div class="tx-row-thumb${p.dataUrl?'':' no-photo'}">${thumbInner}</div>
+        <div class="tx-row-body">
+          <div class="tx-row-cat">${catEmoji} ${catLabel} ${p.dataUrl?'<span class="cam-ic">📷</span>':''}</div>
+          <div class="tx-row-sub">${capText} · ${p.time}</div>
+        </div>
+        <div class="tx-row-amount ${amountCls}">${maskAmount(sign+formatVND(p.amount||0))}</div>
+      </div>`;
     }).join('');
     const dayExpense=dayPhotos.filter(p=>p.moneyType==='expense').reduce((s,p)=>s+(p.amount||0),0);
     const dayIncome=dayPhotos.filter(p=>p.moneyType==='income').reduce((s,p)=>s+(p.amount||0),0);
@@ -1338,7 +1362,7 @@ function renderDayListHtml(){
       const cls=net>0?'income':net<0?'expense':'mixed';
       totalHtml=`<div class="day-total ${cls}">${maskAmount((net>0?'+':'')+(net!==0?formatVND(net):'0đ'))}</div>`;
     }
-    html+=`<div class="day-block"><div class="day-header"><div class="day-name">${label}</div><div class="day-date">${dateLabel}</div>${totalHtml}<div class="day-count">${dayPhotos.length} ảnh</div></div><div class="photo-grid ${gc}">${thumbs}</div></div>`;
+    html+=`<div class="day-block"><div class="day-header"><div class="day-name">${label}</div><div class="day-date">${dateLabel}</div>${totalHtml}<div class="day-count">${dayPhotos.length} ảnh</div></div><div class="tx-list">${thumbs}</div></div>`;
   });
   return html;
 }
@@ -1636,16 +1660,13 @@ function openPhotoFromCal(id){
 function isStandalonePWA(){
   return window.navigator.standalone===true || window.matchMedia('(display-mode: standalone)').matches;
 }
-// iOS Safari specifically (window.navigator.standalone only exists there).
-// NOTE: an earlier version of this file auto-triggered openInSafariForSignIn() below whenever
-// isIOSStandaloneApp() was true, INSTEAD of calling signInWithRedirect. That backfired: on iOS,
-// window.open()/<a target="_blank"> is itself unreliable at escaping the standalone container —
-// on many iOS versions it just reloads this same URL *inside* the app, which looked like the
-// login button doing nothing at all. signInWithRedirect (below, under isStandalonePWA) works fine
-// directly inside the standalone container in practice, so that's the default path again now.
-// openInSafariForSignIn()/copySafariLink() are kept only as an optional MANUAL fallback the user
-// can trigger themselves from the "login-safari-note" box, for the rare device where the redirect
-// really doesn't come back — never triggered automatically.
+// iOS Safari specifically (window.navigator.standalone only exists there). On iOS, doing the
+// Google/Facebook OAuth redirect *inside* the installed home-screen app is unreliable: WebKit
+// doesn't reliably keep the pending-sign-in state across the trip out to accounts.google.com and
+// back, so the app just lands back on the login screen even though nothing actually went wrong on
+// the user's end. The fix that works: kick the user out to real Safari to sign in there (localStorage,
+// where Firebase keeps the signed-in session, IS shared between Safari and the home-screen app for
+// the same site) — then they just reopen the app from the home screen and they're already signed in.
 function isIOSStandaloneApp(){
   return window.navigator.standalone===true;
 }
@@ -1686,6 +1707,10 @@ function initSafariLoginNote(){
 }
 function signInGoogle(){
   const provider=new firebase.auth.GoogleAuthProvider();
+  if(isIOSStandaloneApp()){
+    openInSafariForSignIn();
+    return;
+  }
   // signInWithPopup does not work reliably in an installed (standalone) PWA on iOS/Android —
   // the popup window loses its opener context, so login (and therefore cloud sync) silently fails.
   if(isStandalonePWA()){
@@ -1703,6 +1728,10 @@ function signInGoogle(){
 }
 function signInFacebook(){
   const provider=new firebase.auth.FacebookAuthProvider();
+  if(isIOSStandaloneApp()){
+    openInSafariForSignIn();
+    return;
+  }
   if(isStandalonePWA()){
     auth.signInWithRedirect(provider).catch(e=>{console.error(e);showToast('Đăng nhập thất bại: '+(e.code||e.message));});
     return;
