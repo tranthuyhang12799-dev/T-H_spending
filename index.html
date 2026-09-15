@@ -2294,14 +2294,14 @@ document.addEventListener('DOMContentLoaded',()=>{
       swReg=reg;
       reg.update().catch(()=>{});
     }).catch(()=>{});
-    // The service worker itself skips waiting and claims clients as soon as
-    // a new version installs. Once it does, this fires — reload once so the
-    // open page actually runs the new JS instead of staying on the old one.
-    let refreshing=false;
+    // Trước đây code này tự động window.location.reload() ngay khi phát hiện
+    // bản mới — nhưng nếu người dùng đang gõ dở email/mật khẩu hoặc đang giữa
+    // chừng đăng nhập lúc đó, việc reload đột ngột sẽ làm mất luôn phiên đăng
+    // nhập đang xử lý (nhìn như "màn hình nháy rồi quay lại login"). Giờ chỉ
+    // âm thầm để service worker mới nhận quyền kiểm soát — bản mới sẽ tự áp
+    // dụng vào lần mở app kế tiếp, không làm gián đoạn phiên đang dùng.
     navigator.serviceWorker.addEventListener('controllerchange',()=>{
-      if(refreshing)return;
-      refreshing=true;
-      window.location.reload();
+      console.log('Service worker đã cập nhật — bản mới sẽ áp dụng vào lần mở app kế tiếp.');
     });
     // Re-check for a newer sw.js every time the app is brought back to the
     // foreground (covers the case of reopening an installed home-screen icon).
