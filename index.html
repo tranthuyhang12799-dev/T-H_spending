@@ -381,6 +381,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
       <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.5 0 10.5-2.1 14.3-5.5l-6.6-5.6C29.6 34.7 27 35.5 24 35.5c-5.3 0-9.7-3.4-11.3-8.1l-6.6 5.1C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.7l6.6 5.6C41.5 36.4 44 30.8 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
       Đăng nhập với Google
     </button>
+    <p class="login-note" id="login-safari-hint" style="display:none">Nếu đăng nhập xong bị quay lại màn hình này: đây là hạn chế của Safari với app đã ghim màn hình chính. Hãy <a href="." target="_blank" style="color:var(--accent)">mở link này bằng Safari thường</a> để đăng nhập lần đầu, sau đó quay lại icon đã ghim — phiên đăng nhập sẽ tự được nhận.</p>
     <p class="login-note">Ảnh và dữ liệu chi tiêu được lưu trên cloud, gắn với tài khoản Google — không lưu trên máy.</p>
   </div>
 </div>
@@ -1898,18 +1899,23 @@ function showToast(msg){
 }
 
 // ====== AUTH ======
+// Lưu ý về lỗi "đăng nhập xong quay lại màn hình login" khi đã ghim app ra
+// màn hình chính trên iOS Safari:
+// Đây là hạn chế của WebKit/Safari (không phải lỗi cú pháp code) — khi app
+// chạy ở chế độ standalone (đã ghim), vòng round-trip OAuth qua
+// accounts.google.com và authDomain (*.firebaseapp.com) bị Safari's
+// Intelligent Tracking Prevention chặn lưu trạng thái tạm thời, nên
+// getRedirectResult() trả về rỗng dù đăng nhập Google đã thành công.
+// signInWithPopup thường ổn định hơn signInWithRedirect trong trường hợp này
+// vì nó mở một sheet xác thực riêng (ASWebAuthenticationSession) thay vì điều
+// hướng rời khỏi app, nên được ưu tiên thử trước — signInWithRedirect chỉ là
+// phương án dự phòng cuối cùng.
 function isStandalonePWA(){
   return window.navigator.standalone===true || window.matchMedia('(display-mode: standalone)').matches;
 }
 function signInGoogle(){
   if(!auth){showToast('Chưa kết nối được máy chủ đăng nhập');return;}
   const provider=new firebase.auth.GoogleAuthProvider();
-  // signInWithPopup không hoạt động ổn định trong PWA đã ghim màn hình chính
-  // trên iOS/Android — popup mất context opener nên đăng nhập thất bại âm thầm.
-  if(isStandalonePWA()){
-    auth.signInWithRedirect(provider).catch(e=>{console.error(e);showToast('Đăng nhập thất bại: '+(e.code||e.message));});
-    return;
-  }
   auth.signInWithPopup(provider).catch(e=>{
     console.error(e);
     if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment'||e.code==='auth/popup-closed-by-user'){
@@ -1922,7 +1928,19 @@ function signInGoogle(){
 function signOutUser(){
   if(auth)auth.signOut();
 }
-if(auth)auth.getRedirectResult().catch(e=>{console.error(e);if(e&&e.code)showToast('Đăng nhập thất bại: '+e.code);});
+if(auth){
+  auth.getRedirectResult().then(result=>{
+    // Nếu vừa quay lại từ signInWithRedirect mà vẫn không có user — đây chính
+    // là triệu chứng bug ITP nói trên. Gợi ý người dùng mở bằng Safari thường
+    // (không phải icon đã ghim) để đăng nhập lần đầu; sau đó phiên đăng nhập
+    // sẽ được lưu vào localStorage của cùng origin và app ghim màn hình chính
+    // sẽ tự nhận ra khi mở lại, vì localStorage (khác sessionStorage) vẫn
+    // được chia sẻ giữa Safari thường và app standalone.
+    if(!result.user&&isStandalonePWA()&&!auth.currentUser){
+      showToast('Nếu đăng nhập không vào được, hãy mở link app bằng Safari thường (không phải icon đã ghim) để đăng nhập lần đầu, sau đó quay lại icon đã ghim.');
+    }
+  }).catch(e=>{console.error(e);if(e&&e.code)showToast('Đăng nhập thất bại: '+e.code);});
+}
 
 function subscribeCloudPhotos(){
   if(photosUnsub){photosUnsub();photosUnsub=null;}
@@ -1967,6 +1985,10 @@ document.addEventListener('keydown',(e)=>{
 document.addEventListener('DOMContentLoaded',()=>{
   applyTheme(getTheme());
   switchTab('gallery');
+  if(isStandalonePWA()){
+    const hint=document.getElementById('login-safari-hint');
+    if(hint)hint.style.display='block';
+  }
   if('serviceWorker' in navigator){
     let swReg=null;
     navigator.serviceWorker.register('sw.js').then(reg=>{
