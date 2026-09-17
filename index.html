@@ -1222,7 +1222,7 @@ function updateThumbPreview(){
   p.innerHTML=photos.length>0?`<img src="${photos[0].dataUrl}" alt="">`:'<span>📁</span>';
 }
 
-let galleryViewMode='month',amountsHidden=true,selectedDayStr=null;
+let galleryViewMode='month',amountsHidden=false,selectedDayStr=null;
 function greetingParts(){
   const h=new Date().getHours();
   if(h<11)return['Chào buổi sáng','🌤️'];
