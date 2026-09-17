@@ -1660,7 +1660,9 @@ function editBudget(monthKey){
 
 // ====== STATS ======
 let statsMonthOffset=0;
-function changeStatsMonth(delta){statsMonthOffset+=delta;renderStats();}
+let statsFilterCat='all';
+function changeStatsMonth(delta){statsMonthOffset+=delta;statsFilterCat='all';renderStats();}
+function statsSelectCat(cid){statsFilterCat=cid;renderStats();}
 function renderStats(){
   const el=document.getElementById('s-stats');
   if(!el)return;
@@ -1704,18 +1706,27 @@ function renderStats(){
     </div>`;
   }
 
+  let byCat={},catRows=[];
   if(expensePhotos.length){
-    const byCat={};
     expensePhotos.forEach(p=>{
       const cid=p.category||'khac';
       byCat[cid]=byCat[cid]||{total:0,count:0};
       byCat[cid].total+=p.amount;
       byCat[cid].count+=1;
     });
-    const rows=Object.keys(byCat).map(cid=>({cid,total:byCat[cid].total,count:byCat[cid].count})).sort((a,b)=>b.total-a.total);
-    const maxVal=rows[0].total;
-    html+=`<div class="cat-stats-title">Chi tiêu theo danh mục (bấm để xem chi tiết)</div>`;
-    rows.forEach(r=>{
+    catRows=Object.keys(byCat).map(cid=>({cid,total:byCat[cid].total,count:byCat[cid].count})).sort((a,b)=>b.total-a.total);
+    if(!catRows.find(r=>r.cid===statsFilterCat))statsFilterCat='all';
+
+    html+=`<div class="cat-stats-title">Lọc theo danh mục</div>
+    <div class="cat-pills cat-pills-light" style="margin-bottom:2px">
+      <div class="cat-pill${statsFilterCat==='all'?' active':''}" onclick="statsSelectCat('all')">🔎 Tất cả</div>
+      ${catRows.map(r=>{const info=getCatInfo('expense',r.cid);return`<div class="cat-pill${statsFilterCat===r.cid?' active':''}" onclick="statsSelectCat('${r.cid}')">${info.icon} ${info.label}</div>`;}).join('')}
+    </div>`;
+
+    const shownRows=statsFilterCat==='all'?catRows:catRows.filter(r=>r.cid===statsFilterCat);
+    const maxVal=catRows[0].total;
+    html+=`<div class="cat-stats-title" style="margin-top:6px">Chi tiêu theo danh mục (bấm để xem chi tiết)</div>`;
+    shownRows.forEach(r=>{
       const info=getCatInfo('expense',r.cid);
       const pct=Math.round((r.total/maxVal)*100);
       const share=totalExpense>0?Math.round((r.total/totalExpense)*100):0;
@@ -1730,7 +1741,8 @@ function renderStats(){
   }
 
   if(monthPhotos.length){
-    const allSorted=monthPhotos.filter(p=>p.amount>0).slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+    let allSorted=monthPhotos.filter(p=>p.amount>0).slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+    if(statsFilterCat!=='all')allSorted=allSorted.filter(p=>(p.category||'khac')===statsFilterCat);
     if(allSorted.length){
       html+=`<div class="cat-stats-title" style="margin-top:22px">Chi tiết giao dịch (${allSorted.length})</div>
       <div class="cd-list" style="max-height:none;margin-bottom:10px">${allSorted.map(p=>{
@@ -1747,6 +1759,9 @@ function renderStats(){
           <div class="cd-row-amount" style="color:${p.moneyType==='expense'?'#ef4444':'#22c55e'}">${p.moneyType==='expense'?'-':'+'}${maskAmount(formatVND(p.amount))}</div>
         </div>`;
       }).join('')}</div>`;
+    }else{
+      html+=`<div class="cat-stats-title" style="margin-top:22px">Chi tiết giao dịch (0)</div>
+      <div class="cd-empty">Không có giao dịch nào trong danh mục này</div>`;
     }
   }
 
