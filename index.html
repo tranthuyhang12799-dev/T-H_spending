@@ -181,7 +181,19 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .va-btn.share{background:var(--accent-dim);color:var(--accent)}
 .va-btn.expense-edit{background:linear-gradient(135deg,rgba(var(--accent-rgb),0.18),rgba(var(--accent2-rgb),0.18));color:var(--accent)}
 /* DAY SUMMARY */
+#monthlist{position:fixed;inset:0;z-index:99;background:var(--bg);display:none;flex-direction:column}
+#monthlist.open{display:flex}
+.ml-header{padding:calc(var(--safe-top) + 8px) 16px 10px;display:flex;align-items:center;gap:10px;flex-shrink:0;border-bottom:0.5px solid var(--border)}
+.ml-close{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:none;cursor:pointer;font-size:16px;color:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ml-title{flex:1;font-size:15px;font-weight:700}
+.ml-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px calc(var(--safe-bottom) + 14px);display:flex;flex-direction:column;gap:18px}
+.ml-scroll::-webkit-scrollbar{display:none}
+.day-total-pill{margin-left:auto;font-size:12px;font-weight:700;border-radius:10px;padding:3px 9px}
+.day-total-pill.expense{color:#ef4444;background:rgba(239,68,68,0.12)}
+.day-total-pill.income{color:#22c55e;background:rgba(34,197,94,0.12)}
+.day-total-pill.mixed{color:var(--text2);background:var(--surface2)}
 #daysummary{position:fixed;inset:0;z-index:99;background:#0d0d0f;display:none;flex-direction:column}
+
 #daysummary.open{display:flex}
 .ds-header{padding:calc(var(--safe-top) + 8px) 16px 4px;display:flex;align-items:center;gap:10px;flex-shrink:0}
 .ds-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;cursor:pointer;font-size:16px;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -261,8 +273,8 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .gh-status-row{display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0}
 .gh-pill{font-size:12.5px;font-weight:500;padding:8px 12px;border-radius:20px;background:rgba(34,197,94,0.14);color:#4ade80}
 .gh-pill.warn{background:rgba(239,68,68,0.14);color:#f87171}
-.gh-pill-sm{font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:20px;background:var(--surface2);color:var(--text)}
 .gh-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
+.gh-toggle-group{display:flex;align-items:center;gap:8px;min-width:0}
 .gh-toggle{display:flex;background:var(--surface2);border-radius:14px;padding:3px;gap:2px}
 .gh-toggle-btn{font-size:13px;font-weight:600;color:var(--text2);padding:8px 16px;border-radius:11px;cursor:pointer}
 .gh-toggle-btn.active{background:var(--surface);color:var(--text)}
@@ -332,7 +344,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .cal-day.today .cal-day-num{box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:700;color:var(--text)}
 .cal-day.has-photo .cal-day-num{background:var(--accent-dim);color:var(--accent);font-weight:600}
 .cal-day.streak-day .cal-day-num{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:700}
-.cal-day-thumb-wrap{width:100%;flex:1;min-height:0;border-radius:7px;overflow:hidden;background:var(--surface2)}
+.cal-day-thumb-wrap{width:100%;flex:1;min-height:0;border-radius:14px;overflow:hidden;background:var(--surface2);border:2px solid var(--accent);box-shadow:0 2px 6px var(--card-shadow)}
 .cal-day-thumb-wrap img{width:100%;height:100%;object-fit:contain;display:block}
 .cal-day-thumb-stack{position:relative;width:100%;flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
 .stack-photo{position:absolute;width:76%;height:76%;border-radius:14px;overflow:hidden;background:var(--surface2);border:2px solid var(--accent);box-shadow:0 2px 6px var(--card-shadow)}
@@ -562,6 +574,15 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   <div class="ds-total" id="ds-total"></div>
   <div class="ds-scroll" id="ds-scroll"></div>
 </div>
+
+<div id="monthlist">
+  <div class="ml-header">
+    <button class="ml-close" onclick="closeMonthPhotoList()">✕</button>
+    <div class="ml-title" id="ml-title"></div>
+  </div>
+  <div class="ml-scroll" id="ml-scroll"></div>
+</div>
+
 
 <div id="catdetail-modal" class="cal-modal">
   <div class="cal-sheet">
@@ -1220,7 +1241,6 @@ function maskAmount(str){return amountsHidden?'••••••':str;}
 function renderGallery(){
   const el=document.getElementById('s-gallery');
   const[greet,emoji]=greetingParts();
-  const streak=calcStreak();
   const todayStr=toDateStr(new Date());
   const todayExpense=photos.filter(p=>p.date===todayStr&&p.moneyType==='expense').reduce((s,p)=>s+(p.amount||0),0);
 
@@ -1242,14 +1262,15 @@ function renderGallery(){
   </div>
   <div class="gh-status-row">
     <div class="gh-pill ${todayExpense>0?'warn':'good'}">${todayExpense>0?`🧾 Hôm nay đã chi ${formatVND(todayExpense)}`:'🌿 Hôm nay chưa chi tiêu'}</div>
-    <div class="gh-pill-sm" onclick="showStreakInfo()" style="cursor:pointer">🔥 ${streak}</div>
   </div>
   <div class="gh-toggle-row">
-    <div class="gh-toggle">
-      <div class="gh-toggle-btn${galleryViewMode==='day'?' active':''}" onclick="setGalleryView('day')">Ngày</div>
-      <div class="gh-toggle-btn${galleryViewMode==='month'?' active':''}" onclick="setGalleryView('month')">Tháng</div>
+    <div class="gh-toggle-group">
+      <div class="gh-toggle">
+        <div class="gh-toggle-btn${galleryViewMode==='day'?' active':''}" onclick="setGalleryView('day')">Ngày</div>
+        <div class="gh-toggle-btn${galleryViewMode==='month'?' active':''}" onclick="setGalleryView('month')">Tháng</div>
+      </div>
+      ${galleryViewMode==='month'?`<div class="gh-photo-count" onclick="openMonthPhotoList()" style="cursor:pointer">📷 <b>${monthPhotoCount}</b></div>`:''}
     </div>
-    ${galleryViewMode==='month'?`<div class="gh-photo-count">📷 <b>${monthPhotoCount}</b></div>`:''}
     <button class="gh-icon-btn" onclick="toggleAmountsHidden()">${amountsHidden?'🙈':'👁️'}</button>
   </div>
   <div class="gh-summary-row">
@@ -1299,15 +1320,18 @@ function renderDayListHtml(){
     return nav+`<div class="empty-gallery"><div class="big-icon">🗓️</div><h3>Không có giao dịch</h3><p>Chưa có chi tiêu hay thu nhập nào trong ngày này.</p></div>`;
   }
   const sortedDayPhotos=[...dayPhotos].sort((a,b)=>(b.time||'').localeCompare(a.time||''));
-  const thumbs=sortedDayPhotos.map(p=>{
-    const info=(p.amount>0&&p.category)?getCatInfo(p.moneyType,p.category):null;
-    const catLabel=info?info.label:(p.moneyType==='income'?'Thu nhập':'Chi tiêu');
-    const catEmoji=info?info.icon:(p.moneyType==='income'?'💰':'🧾');
-    const amountCls=p.moneyType==='expense'?'expense':'income';
-    const sign=p.moneyType==='expense'?'-':'+';
-    const thumbInner=p.dataUrl?`<img src="${p.dataUrl}" alt="" loading="lazy">`:`<div class="no-photo">${catEmoji}</div>`;
-    const capText=p.caption&&p.caption.trim()?p.caption.trim():catLabel;
-    return`<div class="tx-row" onclick="openViewer('${p.id}')">
+  const thumbs=sortedDayPhotos.map(p=>renderTxRowHtml(p)).join('');
+  return nav+`<div class="tx-list">${thumbs}</div>`;
+}
+function renderTxRowHtml(p){
+  const info=(p.amount>0&&p.category)?getCatInfo(p.moneyType,p.category):null;
+  const catLabel=info?info.label:(p.moneyType==='income'?'Thu nhập':'Chi tiêu');
+  const catEmoji=info?info.icon:(p.moneyType==='income'?'💰':'🧾');
+  const amountCls=p.moneyType==='expense'?'expense':'income';
+  const sign=p.moneyType==='expense'?'-':'+';
+  const thumbInner=p.dataUrl?`<img src="${p.dataUrl}" alt="" loading="lazy">`:`<div class="no-photo">${catEmoji}</div>`;
+  const capText=p.caption&&p.caption.trim()?p.caption.trim():catLabel;
+  return`<div class="tx-row" onclick="openViewer('${p.id}')">
       <div class="tx-row-thumb${p.dataUrl?'':' no-photo'}">${thumbInner}</div>
       <div class="tx-row-body">
         <div class="tx-row-cat">${catEmoji} ${catLabel} ${p.dataUrl?'<span class="cam-ic">📷</span>':''}</div>
@@ -1315,8 +1339,6 @@ function renderDayListHtml(){
       </div>
       <div class="tx-row-amount ${amountCls}">${maskAmount(sign+formatVND(p.amount||0))}</div>
     </div>`;
-  }).join('');
-  return nav+`<div class="tx-list">${thumbs}</div>`;
 }
 function changeSelectedDay(delta){
   const d=new Date(selectedDayStr+'T00:00:00');
@@ -1400,20 +1422,6 @@ function renderMonthCalendarHtml(year,month){
   <div class="cal-weekdays"><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span></div>
   <div class="cal-grid">${grid}</div>
   ${dayPhotosHtml}`;
-}
-
-function calcStreak(){
-  if(!photos.length)return 0;
-  const dates=[...new Set(photos.map(p=>p.date))].sort().reverse();
-  const today=toDateStr(new Date());
-  const yesterday=toDateStr(new Date(Date.now()-86400000));
-  if(dates[0]!==today&&dates[0]!==yesterday)return 0;
-  let streak=0,check=today;
-  for(const d of dates){
-    if(d===check){streak++;const prev=new Date(check+'T00:00:00');prev.setDate(prev.getDate()-1);check=toDateStr(prev);}
-    else if(d<check)break;
-  }
-  return streak;
 }
 
 let viewerList=[],viewerIndex=0;
@@ -1600,13 +1608,6 @@ function exportPhotos(){
   photos.forEach((p,i)=>setTimeout(()=>{const a=document.createElement('a');a.href=p.dataUrl;a.download=`snapday_${p.date}_${p.time.replace(':','')}.jpg`;a.click();},i*400));
 }
 
-function showStreakInfo(){
-  const streak=calcStreak();
-  const total=photos.length;
-  const days=new Set(photos.map(p=>p.date)).size;
-  showToast(`🔥 ${streak} ngày · 📷 ${total} ảnh · 📅 ${days} ngày có ảnh`);
-}
-
 let calMonthOffset=0,selectedCalDate=null;
 function changeCalMonth(delta){
   calMonthOffset+=delta;
@@ -1689,6 +1690,49 @@ function openDaySummary(dateStr){
 }
 function closeDaySummary(){
   document.getElementById('daysummary').classList.remove('open');
+}
+
+function openMonthPhotoList(){
+  const now=new Date();
+  const base=new Date(now.getFullYear(),now.getMonth()+calMonthOffset,1);
+  const year=base.getFullYear(),month=base.getMonth();
+  const monthKeyStr=`${year}-${String(month+1).padStart(2,'0')}`;
+  const monthPhotos=photos.filter(p=>p.date.startsWith(monthKeyStr));
+  const monthNames=['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+  const photoCount=monthPhotos.filter(p=>p.dataUrl&&!p.manual).length;
+  document.getElementById('ml-title').textContent=`${monthNames[month]} ${year} · 📷 ${photoCount}`;
+
+  const scroll=document.getElementById('ml-scroll');
+  if(monthPhotos.length===0){
+    scroll.innerHTML=`<div class="empty-gallery"><div class="big-icon">📷</div><h3>Chưa có ảnh nào</h3><p>Chưa có giao dịch nào trong tháng này.</p></div>`;
+  }else{
+    const byDate={};
+    monthPhotos.forEach(p=>{(byDate[p.date]=byDate[p.date]||[]).push(p);});
+    const dates=Object.keys(byDate).sort().reverse();
+    const days=['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
+    scroll.innerHTML=dates.map(dateStr=>{
+      const dayPhotos=[...byDate[dateStr]].sort((a,b)=>(b.time||'').localeCompare(a.time||''));
+      const d=new Date(dateStr+'T00:00:00');
+      const label=`${days[d.getDay()]}, ${d.getDate()} Tháng ${d.getMonth()+1}`;
+      const dayExpense=dayPhotos.filter(p=>p.moneyType==='expense').reduce((s,p)=>s+(p.amount||0),0);
+      const dayIncome=dayPhotos.filter(p=>p.moneyType==='income').reduce((s,p)=>s+(p.amount||0),0);
+      const net=dayIncome-dayExpense;
+      const pillCls=net<0?'expense':net>0?'income':'mixed';
+      const pillTxt=(dayExpense>0||dayIncome>0)?maskAmount((net>0?'+':'-')+formatVND(Math.abs(net))):'0đ';
+      const rows=dayPhotos.map(p=>renderTxRowHtml(p)).join('');
+      return`<div class="day-block">
+        <div class="day-header">
+          <span class="day-name">${label}</span>
+          <span class="day-total-pill ${pillCls}">${pillTxt}</span>
+        </div>
+        <div class="tx-list">${rows}</div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('monthlist').classList.add('open');
+}
+function closeMonthPhotoList(){
+  document.getElementById('monthlist').classList.remove('open');
 }
 
 
@@ -2060,6 +2104,7 @@ if(auth){
 
 document.addEventListener('keydown',(e)=>{
   if(document.getElementById('daysummary').classList.contains('open')&&e.key==='Escape'){closeDaySummary();return;}
+  if(document.getElementById('monthlist').classList.contains('open')&&e.key==='Escape'){closeMonthPhotoList();return;}
   if(!document.getElementById('viewer').classList.contains('open'))return;
   if(e.key==='ArrowRight')viewerNext();
   else if(e.key==='ArrowLeft')viewerPrev();
