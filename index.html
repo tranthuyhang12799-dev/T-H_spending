@@ -1580,11 +1580,22 @@ function deletePhoto(){
   if(!currentViewerId)return;
   if(!confirm('Xoá ảnh này?'))return;
   const id=currentViewerId;
-  photos=photos.filter(p=>p.id!==id);
-  closeViewer();renderGallery();updateThumbPreview();
-  showToast('Đã xoá');
+  const finishLocalDelete=()=>{
+    photos=photos.filter(p=>p.id!==id);
+    closeViewer();renderGallery();updateThumbPreview();
+    showToast('Đã xoá');
+  };
   if(currentUser&&db){
-    db.collection('photos').doc(id).delete().catch(e=>{console.error(e);showToast('Lỗi xoá trên cloud');});
+    // Xoá trên cloud trước, chỉ xoá khỏi giao diện khi chắc chắn thành công.
+    // Trước đây xoá khỏi mảng `photos` ngay lập tức rồi mới gọi Firestore —
+    // nếu lệnh xoá cloud thất bại (vd. thiếu quyền), listener onSnapshot sẽ
+    // đồng bộ lại và ảnh bị "hồi sinh", trông như nút xoá không hoạt động.
+    db.collection('photos').doc(id).delete().then(finishLocalDelete).catch(e=>{
+      console.error(e);
+      showToast('Lỗi xoá trên cloud: '+(e.code||e.message||'không rõ'));
+    });
+  }else{
+    finishLocalDelete();
   }
 }
 
