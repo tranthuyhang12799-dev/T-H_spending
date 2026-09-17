@@ -405,6 +405,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 </head>
 <body>
 <div id="flash"></div>
+<input type="file" id="library-file-input" accept="image/*" style="display:none" onchange="handleLibraryFile(event)">
 
 <div id="login-screen" class="login-screen">
   <div class="login-card">
@@ -510,6 +511,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
       <button class="cal-nav-btn" onclick="closeFabSheet()">✕</button>
     </div>
     <div class="fab-sheet-list">
+      <div class="fab-sheet-item" onclick="closeFabSheet();pickFromLibrary()"><div class="fab-sheet-icon" style="background:rgba(168,85,247,0.16);color:#a855f7">🖼️</div><div><strong>Chọn ảnh từ thư viện</strong><span>Tải ảnh có sẵn trong máy kèm số tiền</span></div></div>
       <div class="fab-sheet-item" onclick="closeFabSheet();switchTab('camera')"><div class="fab-sheet-icon" style="background:var(--accent-dim);color:var(--accent)">📷</div><div><strong>Chụp ảnh</strong><span>Chụp hoá đơn hoặc khoảnh khắc kèm số tiền</span></div></div>
       <div class="fab-sheet-item" onclick="closeFabSheet();openManualEntry('income')"><div class="fab-sheet-icon" style="background:rgba(34,197,94,0.16);color:#22c55e">💵</div><div><strong>Thêm thu nhập</strong><span>Lương, thưởng... không cần ảnh</span></div></div>
       <div class="fab-sheet-item" onclick="closeFabSheet();openManualEntry('expense')"><div class="fab-sheet-icon" style="background:rgba(239,68,68,0.16);color:#ef4444">🧾</div><div><strong>Thêm chi tiêu</strong><span>Ghi chi tiêu thủ công không cần ảnh</span></div></div>
@@ -1159,20 +1161,95 @@ function sizeDataUrlForFirestore(sourceCanvas,maxLen){
   return dataUrl;
 }
 
+function pickFromLibrary(){
+  document.getElementById('library-file-input').value='';
+  document.getElementById('library-file-input').click();
+}
+
+function handleLibraryFile(event){
+  const file=event.target.files&&event.target.files[0];
+  if(!file)return;
+  if(!file.type.startsWith('image/')){showToast('Vui lòng chọn một tệp ảnh');return;}
+  const reader=new FileReader();
+  reader.onload=()=>showLibraryPreview(reader.result);
+  reader.onerror=()=>showToast('Không đọc được ảnh, thử lại nhé');
+  reader.readAsDataURL(file);
+}
+
+// Hiển thị ảnh đã chọn từ thư viện lên đúng khung máy ảnh, dùng chung toàn bộ
+// form caption/số tiền/danh mục sẵn có. capturePhoto() sẽ nhận diện phần tử
+// #video là <img> (thay vì <video>) để lưu lại đúng ảnh này khi bấm nút lưu.
+function showLibraryPreview(dataUrl){
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  switchTab('camera',true);
+  const wrap=document.getElementById('vf-wrap');
+  wrap.innerHTML=`
+    <img id="video" src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;display:block">
+    <div class="vf-overlay">
+      <div class="vf-top">
+        <div class="date-chip" id="date-chip"></div>
+        <div class="vf-top-btns">
+          <div class="vf-btn" onclick="cancelLibraryPreview()">✕</div>
+        </div>
+      </div>
+      <div class="vf-bottom">
+        <div class="money-row">
+          <div class="money-toggle" id="money-toggle" onclick="toggleMoneyRow()">💰 Thêm chi tiêu</div>
+          <div class="money-fields" id="money-fields" style="display:none">
+            <div class="money-fields-row">
+              <div class="money-type">
+                <button type="button" class="money-type-btn active" data-type="expense" onclick="setMoneyType('expense',this)">Chi</button>
+                <button type="button" class="money-type-btn" data-type="income" onclick="setMoneyType('income',this)">Thu</button>
+              </div>
+              <input id="amount-input" type="number" inputmode="numeric" placeholder="Số tiền (đ)">
+            </div>
+            <div class="money-fields-row">
+              <input id="time-input" type="time">
+              <div class="loc-pill" id="loc-pill" onclick="captureLocation()">📍 Lấy vị trí</div>
+            </div>
+            <div class="cat-pills" id="cat-pills"></div>
+          </div>
+        </div>
+        <input id="caption-input" type="text" placeholder="Thêm caption…" maxlength="80" oninput="onCaptionInput()">
+      </div>
+    </div>`;
+  updateDateChip();
+  isLibraryPreview=true;
+  const shutterBtn=document.getElementById('shutter-btn');
+  if(shutterBtn)shutterBtn.innerHTML='<div class="shutter-inner" style="display:flex;align-items:center;justify-content:center;font-size:26px;color:#000">✓</div>';
+  const flipBtn=document.getElementById('flip-btn');
+  if(flipBtn)flipBtn.style.visibility='hidden';
+}
+
+function cancelLibraryPreview(){
+  isLibraryPreview=false;
+  resetMoneyRow();
+  const shutterBtn=document.getElementById('shutter-btn');
+  if(shutterBtn)shutterBtn.innerHTML='<div class="shutter-inner"></div>';
+  const flipBtn=document.getElementById('flip-btn');
+  if(flipBtn)flipBtn.style.visibility='';
+  startCamera();
+}
+
+let isLibraryPreview=false;
 function capturePhoto(){
   const video=document.getElementById('video');
   if(!video){showToast('Chưa bật camera');return;}
+  const isImg=video.tagName==='IMG';
+  if(isImg&&!video.complete){showToast('Ảnh chưa tải xong, thử lại');return;}
   const flash=document.getElementById('flash');
   flash.style.opacity='1';
   setTimeout(()=>flash.style.opacity='0',150);
   const canvas=document.createElement('canvas');
-  const size=Math.min(video.videoWidth,video.videoHeight);
-  if(!size){showToast('Camera chưa sẵn sàng');return;}
+  const srcW=isImg?video.naturalWidth:video.videoWidth;
+  const srcH=isImg?video.naturalHeight:video.videoHeight;
+  const size=Math.min(srcW,srcH);
+  if(!size){showToast(isImg?'Ảnh chưa sẵn sàng':'Camera chưa sẵn sàng');return;}
   canvas.width=size;canvas.height=size;
   const ctx=canvas.getContext('2d');
-  if(facingMode==='user'){ctx.translate(size,0);ctx.scale(-1,1);}
-  const xOff=(video.videoWidth-size)/2;
-  const yOff=(video.videoHeight-size)/2;
+  if(!isImg&&facingMode==='user'){ctx.translate(size,0);ctx.scale(-1,1);}
+  const xOff=(srcW-size)/2;
+  const yOff=(srcH-size)/2;
   ctx.drawImage(video,xOff,yOff,size,size,0,0,size,size);
   const dataUrl=sizeDataUrlForFirestore(canvas);
   const captionEl=document.getElementById('caption-input');
@@ -1195,6 +1272,10 @@ function capturePhoto(){
   if(document.getElementById('s-gallery').classList.contains('active'))renderGallery();
   showToast(amount>0?`Đã lưu! 📸 ${finalMoneyType==='expense'?'-':'+'}${formatVND(amount)}`:'Đã lưu! 📸');
   uploadPhotoToCloud(photo);
+  if(isImg){
+    isLibraryPreview=false;
+    startCamera();
+  }
 }
 
 async function uploadPhotoToCloud(photo){
@@ -1782,7 +1863,7 @@ function renderSettingsUI(){
   }
 }
 
-function switchTab(tab){
+function switchTab(tab,skipAutoStart){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('s-'+tab).classList.add('active');
   document.getElementById('nav-gallery')?.classList.toggle('active',tab==='gallery');
@@ -1791,7 +1872,7 @@ function switchTab(tab){
   document.getElementById('navl-stats')?.classList.toggle('active',tab==='stats');
   const fab=document.getElementById('fab-add');
   if(fab)fab.style.display=tab==='gallery'?'flex':'none';
-  if(tab==='camera'){if(!stream)startCamera();}
+  if(tab==='camera'){if(!stream&&!skipAutoStart)startCamera();}
   else if(tab==='gallery')renderGallery();
   else if(tab==='stats')renderStats();
 }
