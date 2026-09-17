@@ -180,6 +180,23 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .va-btn.delete{background:rgba(255,59,48,0.15);color:#FF3B30}
 .va-btn.share{background:var(--accent-dim);color:var(--accent)}
 .va-btn.expense-edit{background:linear-gradient(135deg,rgba(var(--accent-rgb),0.18),rgba(var(--accent2-rgb),0.18));color:var(--accent)}
+/* DAY SUMMARY */
+#daysummary{position:fixed;inset:0;z-index:99;background:#0d0d0f;display:none;flex-direction:column}
+#daysummary.open{display:flex}
+.ds-header{padding:calc(var(--safe-top) + 8px) 16px 4px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.ds-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;cursor:pointer;font-size:16px;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ds-title{flex:1;text-align:center;font-size:15px;font-weight:700;color:#fff;margin-right:36px}
+.ds-total{text-align:center;font-size:19px;font-weight:700;padding:14px 16px 18px;flex-shrink:0}
+.ds-total.expense{color:#fb923c}
+.ds-total.income{color:#4ade80}
+.ds-total.mixed{color:#fff}
+.ds-scroll{display:flex;gap:12px;overflow-x:auto;padding:0 16px calc(var(--safe-bottom) + 20px);-webkit-overflow-scrolling:touch;flex:1;align-content:flex-start}
+.ds-scroll::-webkit-scrollbar{display:none}
+.ds-card{flex-shrink:0;width:132px;height:132px;position:relative;border-radius:16px;overflow:hidden;background:#1c1c1f;cursor:pointer}
+.ds-card img{width:100%;height:100%;object-fit:cover;display:block}
+.ds-card::after{content:'';position:absolute;left:0;right:0;bottom:0;height:55%;background:linear-gradient(to top,rgba(0,0,0,0.7),transparent);pointer-events:none}
+.ds-card-pill{position:absolute;top:8px;left:8px;font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:20px;color:#fff;z-index:1;white-space:nowrap}
+.ds-card-amount{position:absolute;left:9px;bottom:8px;font-size:13px;font-weight:700;color:#fff;z-index:1}
 /* STATS */
 #s-stats{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px calc(var(--safe-bottom) + 14px);gap:16px;align-items:stretch}
 #s-stats::-webkit-scrollbar{display:none}
@@ -250,6 +267,8 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .gh-toggle-btn{font-size:13px;font-weight:600;color:var(--text2);padding:8px 16px;border-radius:11px;cursor:pointer}
 .gh-toggle-btn.active{background:var(--surface);color:var(--text)}
 .gh-icon-btn{width:38px;height:38px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:16px;cursor:pointer;flex-shrink:0}
+.gh-photo-count{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--text2);background:var(--surface2);border-radius:20px;padding:8px 12px;flex-shrink:0}
+.gh-photo-count b{color:var(--text);font-weight:700}
 .gh-summary-row{display:flex;gap:10px;flex-shrink:0}
 .gh-summary-card{flex:1;display:flex;align-items:center;gap:10px;background:var(--surface);border:0.5px solid var(--border);border-radius:16px;padding:12px 14px}
 .gh-summary-icon{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
@@ -533,6 +552,15 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
       <button class="va-btn delete" onclick="deletePhoto()">Xoá</button>
     </div>
   </div>
+</div>
+
+<div id="daysummary">
+  <div class="ds-header">
+    <button class="ds-close" onclick="closeDaySummary()">✕</button>
+    <div class="ds-title" id="ds-title"></div>
+  </div>
+  <div class="ds-total" id="ds-total"></div>
+  <div class="ds-scroll" id="ds-scroll"></div>
 </div>
 
 <div id="catdetail-modal" class="cal-modal">
@@ -820,23 +848,23 @@ function flipCamera(){
 }
 
 const EXPENSE_CATS=[
-  {id:'an-uong',icon:'🍙',label:'Ăn uống'},
-  {id:'di-chuyen',icon:'🚕',label:'Di chuyển'},
-  {id:'vat-dung-ca-nhan',icon:'🧴',label:'Vật dụng cá nhân'},
-  {id:'mua-sam',icon:'🛍️',label:'Mua sắm'},
-  {id:'xa-giao',icon:'🎉',label:'Xã giao'},
-  {id:'hoa-don',icon:'🧾',label:'Hoá đơn'},
-  {id:'nha-o',icon:'🏠',label:'Nhà ở'},
-  {id:'giai-tri',icon:'🎬',label:'Giải trí'},
-  {id:'suc-khoe',icon:'🩹',label:'Sức khoẻ'},
-  {id:'giao-duc',icon:'📚',label:'Giáo dục'},
-  {id:'vo-hinh',icon:'👻',label:'Chi phí vô hình'},
-  {id:'khac',icon:'📦',label:'Khác'}
+  {id:'an-uong',icon:'🍙',label:'Ăn uống',color:'#22c55e'},
+  {id:'di-chuyen',icon:'🚕',label:'Di chuyển',color:'#3b82f6'},
+  {id:'vat-dung-ca-nhan',icon:'🧴',label:'Vật dụng cá nhân',color:'#a855f7'},
+  {id:'mua-sam',icon:'🛍️',label:'Mua sắm',color:'#ec4899'},
+  {id:'xa-giao',icon:'🎉',label:'Xã giao',color:'#f97316'},
+  {id:'hoa-don',icon:'🧾',label:'Hoá đơn',color:'#ef4444'},
+  {id:'nha-o',icon:'🏠',label:'Nhà ở',color:'#14b8a6'},
+  {id:'giai-tri',icon:'🎬',label:'Giải trí',color:'#8b5cf6'},
+  {id:'suc-khoe',icon:'🩹',label:'Sức khoẻ',color:'#f43f5e'},
+  {id:'giao-duc',icon:'📚',label:'Giáo dục',color:'#6366f1'},
+  {id:'vo-hinh',icon:'👻',label:'Chi phí vô hình',color:'#6b7280'},
+  {id:'khac',icon:'📦',label:'Khác',color:'#6b7280'}
 ];
 const INCOME_CATS=[
-  {id:'luong',icon:'💵',label:'Lương'},
-  {id:'thuong',icon:'🎁',label:'Thưởng'},
-  {id:'khac-thu',icon:'📦',label:'Khác'}
+  {id:'luong',icon:'💵',label:'Lương',color:'#22c55e'},
+  {id:'thuong',icon:'🎁',label:'Thưởng',color:'#eab308'},
+  {id:'khac-thu',icon:'📦',label:'Khác',color:'#6b7280'}
 ];
 function getCatList(type){return type==='income'?INCOME_CATS:EXPENSE_CATS;}
 function getCatInfo(type,catId){
@@ -1203,6 +1231,7 @@ function renderGallery(){
   const monthPhotos=photos.filter(p=>p.date.startsWith(monthKeyStr));
   const monthExpense=monthPhotos.filter(p=>p.moneyType==='expense').reduce((s,p)=>s+(p.amount||0),0);
   const monthIncome=monthPhotos.filter(p=>p.moneyType==='income').reduce((s,p)=>s+(p.amount||0),0);
+  const monthPhotoCount=monthPhotos.filter(p=>p.dataUrl&&!p.manual).length;
 
   let html=`
   <div class="gh-greet-row">
@@ -1220,6 +1249,7 @@ function renderGallery(){
       <div class="gh-toggle-btn${galleryViewMode==='day'?' active':''}" onclick="setGalleryView('day')">Ngày</div>
       <div class="gh-toggle-btn${galleryViewMode==='month'?' active':''}" onclick="setGalleryView('month')">Tháng</div>
     </div>
+    ${galleryViewMode==='month'?`<div class="gh-photo-count">📷 <b>${monthPhotoCount}</b></div>`:''}
     <button class="gh-icon-btn" onclick="toggleAmountsHidden()">${amountsHidden?'🙈':'👁️'}</button>
   </div>
   <div class="gh-summary-row">
@@ -1605,7 +1635,7 @@ function getStreakDates(){
 function calDayClick(dateStr){
   const dayPhotos=photos.filter(p=>p.date===dateStr);
   if(dayPhotos.length===0)return;
-  openViewer(dayPhotos[0].id);
+  openDaySummary(dateStr);
 }
 function selectCalDay(dateStr){
   selectedCalDate=selectedCalDate===dateStr?null:dateStr;
@@ -1614,6 +1644,51 @@ function selectCalDay(dateStr){
 
 function openPhotoFromCal(id){
   openViewer(id);
+}
+
+function openDaySummary(dateStr){
+  const dayPhotos=photos.filter(p=>p.date===dateStr).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  if(dayPhotos.length===0)return;
+  const d=new Date(dateStr+'T00:00:00');
+  const days=['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
+  document.getElementById('ds-title').textContent=`${days[d.getDay()]}, ngày ${d.getDate()} thg ${d.getMonth()+1}, ${d.getFullYear()}`;
+
+  const dayExpense=dayPhotos.filter(p=>p.moneyType==='expense').reduce((s,p)=>s+(p.amount||0),0);
+  const dayIncome=dayPhotos.filter(p=>p.moneyType==='income').reduce((s,p)=>s+(p.amount||0),0);
+  const totalEl=document.getElementById('ds-total');
+  if(dayExpense>0&&dayIncome===0){
+    totalEl.className='ds-total expense';
+    totalEl.textContent=`↗ ${maskAmount(formatVND(dayExpense))}đ`;
+  }else if(dayIncome>0&&dayExpense===0){
+    totalEl.className='ds-total income';
+    totalEl.textContent=`↙ ${maskAmount(formatVND(dayIncome))}đ`;
+  }else if(dayExpense>0||dayIncome>0){
+    const net=dayIncome-dayExpense;
+    totalEl.className=`ds-total ${net<0?'expense':net>0?'income':'mixed'}`;
+    totalEl.textContent=`${net<0?'↗':'↙'} ${maskAmount(formatVND(Math.abs(net)))}đ`;
+  }else{
+    totalEl.className='ds-total mixed';
+    totalEl.textContent='0đ';
+  }
+
+  const scroll=document.getElementById('ds-scroll');
+  scroll.innerHTML=dayPhotos.map(p=>{
+    const info=p.category?getCatInfo(p.moneyType,p.category):null;
+    const catLabel=info?info.label:(p.moneyType==='income'?'Thu nhập':'Chi tiêu');
+    const catColor=info?info.color:'#6b7280';
+    const sign=p.moneyType==='expense'?'-':'+';
+    const imgSrc=p.dataUrl||'';
+    return`<div class="ds-card" onclick="closeDaySummary();openViewer('${p.id}')">
+      ${imgSrc?`<img src="${imgSrc}" alt="" loading="lazy">`:''}
+      <div class="ds-card-pill" style="background:${catColor}">${catLabel}</div>
+      <div class="ds-card-amount">${maskAmount(sign+formatVND(p.amount||0))}đ</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('daysummary').classList.add('open');
+}
+function closeDaySummary(){
+  document.getElementById('daysummary').classList.remove('open');
 }
 
 
@@ -1984,6 +2059,7 @@ if(auth){
 }
 
 document.addEventListener('keydown',(e)=>{
+  if(document.getElementById('daysummary').classList.contains('open')&&e.key==='Escape'){closeDaySummary();return;}
   if(!document.getElementById('viewer').classList.contains('open'))return;
   if(e.key==='ArrowRight')viewerNext();
   else if(e.key==='ArrowLeft')viewerPrev();
