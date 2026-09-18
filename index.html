@@ -367,6 +367,10 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .task-countdown-last{color:#f59e0b}
 .task-countdown-ended{color:var(--text3);font-weight:500}
 .task-check-today.disabled{opacity:0.35;cursor:not-allowed}
+.task-edit-colors-label{font-size:11px;color:var(--text3);margin-bottom:6px;padding-left:2px}
+.task-edit-colors{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:2px}
+.task-color-swatch{width:26px;height:26px;border-radius:50%;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);position:relative}
+.task-color-swatch.selected{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--text)}
 .tcal-grid .cal-day{aspect-ratio:auto;min-height:44px;justify-content:flex-start;padding-top:2px}
 .tcal-ticks-row{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;padding:0 1px}
 .tcal-tick{width:11px;height:11px;border-radius:50%;color:#fff;font-size:7px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}
@@ -2067,10 +2071,15 @@ const TASK_PALETTE=[
   {done:'#7C93E8',soft:'#d2d9f5'},
   {done:'#A8C24C',soft:'#e3edc0'}
 ];
-function taskColor(id){
+function taskColorIndex(id){
+  const t=tasks.find(x=>x.id===id);
+  if(t&&typeof t.colorIndex==='number')return((t.colorIndex%TASK_PALETTE.length)+TASK_PALETTE.length)%TASK_PALETTE.length;
   let idx=tasks.findIndex(x=>x.id===id);
   if(idx<0)idx=0;
-  return TASK_PALETTE[idx%TASK_PALETTE.length];
+  return idx%TASK_PALETTE.length;
+}
+function taskColor(id){
+  return TASK_PALETTE[taskColorIndex(id)];
 }
 function tasksStorageKey(){return 'th_tasks_'+(currentUser?currentUser.uid:'guest');}
 function loadTasks(){
@@ -2128,14 +2137,34 @@ function deleteTask(id){
   renderTasksScreen();
 }
 let editingTaskId=null;
+let editingColorIndex=null;
 function openEditTask(id){
   editingTaskId=id;
+  editingColorIndex=taskColorIndex(id);
   taskAddOpen=false;
   renderTasksScreen();
   setTimeout(()=>{const inp=document.getElementById('edit-text-'+id);if(inp)inp.focus();},50);
 }
+function selectEditColor(idx){
+  const id=editingTaskId;
+  const inp=document.getElementById('edit-text-'+id);
+  const startInp=document.getElementById('edit-start-'+id);
+  const endInp=document.getElementById('edit-end-'+id);
+  const draftText=inp?inp.value:null;
+  const draftStart=startInp?startInp.value:null;
+  const draftEnd=endInp?endInp.value:null;
+  editingColorIndex=idx;
+  renderTasksScreen();
+  const inp2=document.getElementById('edit-text-'+id);
+  if(inp2&&draftText!=null)inp2.value=draftText;
+  const s2=document.getElementById('edit-start-'+id);
+  if(s2&&draftStart!=null)s2.value=draftStart;
+  const e2=document.getElementById('edit-end-'+id);
+  if(e2&&draftEnd!=null)e2.value=draftEnd;
+}
 function cancelEditTask(){
   editingTaskId=null;
+  editingColorIndex=null;
   renderTasksScreen();
 }
 function saveEditTask(id){
@@ -2152,7 +2181,9 @@ function saveEditTask(id){
   t.text=text;
   t.startDate=startDate;
   t.endDate=endDate;
+  t.colorIndex=editingColorIndex!=null?editingColorIndex:taskColorIndex(id);
   editingTaskId=null;
+  editingColorIndex=null;
   saveTasks();
   renderTasksScreen();
 }
@@ -2296,7 +2327,10 @@ function renderTasksScreen(){
     const colorStyle=` style="--tc:${col.done};--tc-soft:${col.soft}"`;
     if(editingTaskId===t.id){
       const safeText=t.text.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-      return`<div class="task-item"${colorStyle}>
+      const curIdx=editingColorIndex!=null?editingColorIndex:taskColorIndex(t.id);
+      const curCol=TASK_PALETTE[curIdx];
+      const swatches=TASK_PALETTE.map((c,i)=>`<div class="task-color-swatch${i===curIdx?' selected':''}" style="background:${c.done}" onclick="selectEditColor(${i})"></div>`).join('');
+      return`<div class="task-item" style="--tc:${curCol.done};--tc-soft:${curCol.soft}">
         <div class="task-add-row">
           <input type="text" id="edit-text-${t.id}" value="${safeText}" maxlength="120" onkeydown="if(event.key==='Enter')saveEditTask('${t.id}')">
           <button onclick="saveEditTask('${t.id}')">✓</button>
@@ -2306,6 +2340,8 @@ function renderTasksScreen(){
           <div class="task-add-date-field"><label>Bắt đầu</label><input type="date" id="edit-start-${t.id}" value="${t.startDate||''}"></div>
           <div class="task-add-date-field"><label>Kết thúc</label><input type="date" id="edit-end-${t.id}" value="${t.endDate||''}"></div>
         </div>
+        <div class="task-edit-colors-label">Màu sắc</div>
+        <div class="task-edit-colors">${swatches}</div>
       </div>`;
     }
     const doneToday=t.doneDates.includes(today);
