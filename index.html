@@ -354,7 +354,10 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .chart-btn{flex-shrink:0;background:var(--surface);border:1.5px solid var(--accent);color:var(--accent);font-weight:600;font-size:12.5px;border-radius:14px;padding:7px 12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
 .task-add-row{display:flex;gap:8px;margin-bottom:10px}
 .task-add-row input{flex:1;min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 14px;font-size:14px;color:var(--text);font-family:inherit;outline:none}
-.task-add-row button{flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:0 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.task-add-row button{flex-shrink:0;width:42px;height:42px;border-radius:50%;background:var(--accent);color:#fff;border:none;padding:0;font-size:20px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;line-height:1}
+.task-add-cancel{background:var(--surface2)!important;color:var(--text2)!important;font-size:16px!important}
+.task-add-fab-row{display:flex;justify-content:center;margin-bottom:14px}
+.task-add-fab{width:46px;height:46px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:22px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;line-height:1;box-shadow:0 4px 12px var(--accent-dim)}
 .task-add-dates{display:flex;gap:8px;margin-bottom:14px}
 .task-add-date-field{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .task-add-date-field label{font-size:11px;color:var(--text3);padding-left:2px}
@@ -2063,6 +2066,16 @@ function saveTasks(){
   try{localStorage.setItem(tasksStorageKey(),JSON.stringify(tasks));}catch(e){}
 }
 function openTasks(){switchTab('tasks');}
+let taskAddOpen=false;
+function openTaskAddForm(){
+  taskAddOpen=true;
+  renderTasksScreen();
+  setTimeout(()=>{const inp=document.getElementById('task-input');if(inp)inp.focus();},50);
+}
+function closeTaskAddForm(){
+  taskAddOpen=false;
+  renderTasksScreen();
+}
 function addTask(){
   const inp=document.getElementById('task-input');
   const startInp=document.getElementById('task-start-input');
@@ -2073,9 +2086,7 @@ function addTask(){
   const endDate=endInp&&endInp.value?endInp.value:null;
   if(startDate&&endDate&&endDate<startDate){showToast('Ngày kết thúc phải sau ngày bắt đầu');return;}
   tasks.unshift({id:'t'+Date.now()+Math.random().toString(36).slice(2,6),text,startDate,endDate,doneDates:[],createdAt:Date.now()});
-  inp.value='';
-  if(startInp)startInp.value='';
-  if(endInp)endInp.value='';
+  taskAddOpen=false;
   saveTasks();
   renderTasksScreen();
 }
@@ -2144,27 +2155,33 @@ function renderTasksScreen(){
   if(!el)return;
   loadTasks();
   let html=`<div class="tasks-header-row">
-    <div class="tasks-header-title">${tasksShowHistory?'🕘 Lịch sử chuỗi':'✅ Nhiệm vụ'}</div>
+    ${tasksShowHistory?'<div class="tasks-header-title">🕘 Lịch sử chuỗi</div>':`<div class="gh-toggle">
+      <div class="gh-toggle-btn${tasksViewMode==='list'?' active':''}" onclick="setTasksViewMode('list')">Danh sách</div>
+      <div class="gh-toggle-btn${tasksViewMode==='calendar'?' active':''}" onclick="setTasksViewMode('calendar')">Lịch tháng</div>
+    </div>`}
     <button class="chart-btn" onclick="toggleTasksHistory()">${tasksShowHistory?'← Quay lại':'🕘 Lịch sử'}</button>
   </div>`;
-  if(!tasksShowHistory){
-    html+=`<div class="gh-toggle-row" style="margin-bottom:14px">
-      <div class="gh-toggle">
-        <div class="gh-toggle-btn${tasksViewMode==='list'?' active':''}" onclick="setTasksViewMode('list')">Danh sách</div>
-        <div class="gh-toggle-btn${tasksViewMode==='calendar'?' active':''}" onclick="setTasksViewMode('calendar')">Lịch tháng</div>
-      </div>
-    </div>`;
-  }
   if(!tasksShowHistory&&tasksViewMode==='list'){
-    html+=`<div class="task-add-row">
-      <input type="text" id="task-input" placeholder="Thêm nhiệm vụ mới..." maxlength="120" onkeydown="if(event.key==='Enter')addTask()">
-      <button onclick="addTask()">Thêm</button>
-    </div>
-    <div class="task-add-dates">
-      <div class="task-add-date-field"><label>Bắt đầu</label><input type="date" id="task-start-input"></div>
-      <div class="task-add-date-field"><label>Kết thúc</label><input type="date" id="task-end-input"></div>
-    </div>`;
+    if(taskAddOpen){
+      html+=`<div class="task-add-row">
+        <input type="text" id="task-input" placeholder="Thêm nhiệm vụ mới..." maxlength="120" onkeydown="if(event.key==='Enter')addTask()">
+        <button onclick="addTask()">✓</button>
+        <button class="task-add-cancel" onclick="closeTaskAddForm()">✕</button>
+      </div>
+      <div class="task-add-dates">
+        <div class="task-add-date-field"><label>Bắt đầu</label><input type="date" id="task-start-input"></div>
+        <div class="task-add-date-field"><label>Kết thúc</label><input type="date" id="task-end-input"></div>
+      </div>`;
+    }else{
+      html+=`<div class="task-add-fab-row"><button class="task-add-fab" onclick="openTaskAddForm()">+</button></div>`;
+    }
   }
+  if(tasksViewMode==='calendar'&&!tasksShowHistory){
+    html+=renderTasksCalendarHtml();
+    el.innerHTML=html;
+    return;
+  }
+
   if(!tasks.length){
     el.innerHTML=html;
     return;
@@ -2188,12 +2205,6 @@ function renderTasksScreen(){
         <div class="task-hist-list">${runsHtml}</div>
       </div>`;
     }).join('');
-    el.innerHTML=html;
-    return;
-  }
-
-  if(tasksViewMode==='calendar'){
-    html+=renderTasksCalendarHtml();
     el.innerHTML=html;
     return;
   }
