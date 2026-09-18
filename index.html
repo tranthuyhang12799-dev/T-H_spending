@@ -366,6 +366,9 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .task-day.today .tdd-dot{box-shadow:0 0 0 2px var(--accent-dim)}
 .tdd-label{font-size:10px;color:var(--text3)}
 .task-empty{text-align:center;color:var(--text3);font-size:13.5px;padding:30px 10px}
+.task-hist-run{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:10px;padding:8px 12px;margin-top:6px;font-size:13px}
+.task-hist-run .thr-len{font-weight:700;color:var(--accent2)}
+.task-hist-run .thr-range{color:var(--text2);font-size:12px}
 .cal-day.today .cal-day-num{box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:700;color:var(--text)}
 .cal-day.has-photo .cal-day-num{background:var(--accent-dim);color:var(--accent);font-weight:600}
 .cal-day.streak-day .cal-day-num{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:700}
@@ -529,10 +532,13 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 <div id="tasks-modal" class="cal-modal">
   <div class="cal-sheet" style="max-height:88vh;overflow-y:auto">
     <div class="cal-header">
-      <div class="cal-title">✅ Nhiệm vụ</div>
-      <button class="cal-nav-btn" onclick="closeTasks()">✕</button>
+      <div class="cal-title" id="tasks-title">✅ Nhiệm vụ</div>
+      <div style="display:flex;gap:8px">
+        <button class="cal-nav-btn" id="tasks-history-btn" onclick="toggleTasksHistory()" title="Lịch sử chuỗi">🕘</button>
+        <button class="cal-nav-btn" onclick="closeTasks()">✕</button>
+      </div>
     </div>
-    <div class="task-add-row">
+    <div class="task-add-row" id="tasks-add-row">
       <input type="text" id="task-input" placeholder="Thêm nhiệm vụ mới..." maxlength="120" onkeydown="if(event.key==='Enter')addTask()">
       <button onclick="addTask()">Thêm</button>
     </div>
@@ -2044,6 +2050,7 @@ function saveTasks(){
 }
 function openTasks(){
   loadTasks();
+  tasksShowHistory=false;
   renderTasks();
   document.getElementById('tasks-modal').classList.add('open');
   setTimeout(()=>{const inp=document.getElementById('task-input');if(inp)inp.focus();},200);
@@ -2085,10 +2092,71 @@ function taskStreak(doneDates){
   }
   return streak;
 }
+function taskStreakRuns(doneDates){
+  // Trả về danh sách các chuỗi ngày liên tiếp đã hoàn thành, mới nhất trước, kèm độ dài.
+  const sortedDates=[...doneDates].sort();
+  const runs=[];
+  let runStart=null,prev=null;
+  sortedDates.forEach(ds=>{
+    const d=new Date(ds+'T00:00:00');
+    if(prev){
+      const diffDays=Math.round((d-prev)/86400000);
+      if(diffDays===1){
+        // tiếp nối chuỗi hiện tại
+      }else{
+        runs.push({start:runStart,end:prev});
+        runStart=d;
+      }
+    }else{
+      runStart=d;
+    }
+    prev=d;
+  });
+  if(runStart)runs.push({start:runStart,end:prev});
+  return runs.map(r=>({start:r.start,end:r.end,len:Math.round((r.end-r.start)/86400000)+1})).reverse();
+}
+function taskBestStreak(doneDates){
+  const runs=taskStreakRuns(doneDates);
+  return runs.reduce((m,r)=>Math.max(m,r.len),0);
+}
+let tasksShowHistory=false;
+function toggleTasksHistory(){
+  tasksShowHistory=!tasksShowHistory;
+  renderTasks();
+}
+function fmtD(d){return`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;}
 function renderTasks(){
   const el=document.getElementById('tasks-body');
   if(!el)return;
+  const titleEl=document.getElementById('tasks-title');
+  const addRow=document.getElementById('tasks-add-row');
+  const histBtn=document.getElementById('tasks-history-btn');
+  if(addRow)addRow.style.display=tasksShowHistory?'none':'flex';
+  if(titleEl)titleEl.textContent=tasksShowHistory?'🕘 Lịch sử chuỗi':'✅ Nhiệm vụ';
+  if(histBtn){histBtn.textContent=tasksShowHistory?'←':'🕘';histBtn.title=tasksShowHistory?'Quay lại':'Lịch sử chuỗi';}
   if(!tasks.length){el.innerHTML='<div class="task-empty">Chưa có nhiệm vụ nào. Thêm nhiệm vụ đầu tiên phía trên và đánh dấu hoàn thành mỗi ngày để giữ chuỗi!</div>';return;}
+
+  if(tasksShowHistory){
+    const sortedByBest=[...tasks].sort((a,b)=>taskBestStreak(b.doneDates)-taskBestStreak(a.doneDates));
+    el.innerHTML=sortedByBest.map(t=>{
+      const runs=taskStreakRuns(t.doneDates);
+      const best=taskBestStreak(t.doneDates);
+      const cur=taskStreak(t.doneDates);
+      const runsHtml=runs.length?runs.map(r=>{
+        const label=r.len>1?`${fmtD(r.start)} → ${fmtD(r.end)}`:fmtD(r.start);
+        return`<div class="task-hist-run"><span class="thr-len">${r.len} ngày</span><span class="thr-range">${label}</span></div>`;
+      }).join(''):'<div class="task-empty" style="padding:14px 0">Chưa có chuỗi ngày nào được hoàn thành</div>';
+      return`<div class="task-item">
+        <div class="task-main" style="margin-bottom:8px">
+          <div class="task-title">${t.text.replace(/</g,'&lt;')}</div>
+          <div class="task-streak active">🏆 Kỷ lục ${best} ngày · Hiện tại ${cur} ngày</div>
+        </div>
+        <div class="task-hist-list">${runsHtml}</div>
+      </div>`;
+    }).join('');
+    return;
+  }
+
   const today=toDateStr(new Date());
   const dayLabels=['CN','T2','T3','T4','T5','T6','T7'];
   const sorted=[...tasks].sort((a,b)=>taskStreak(b.doneDates)-taskStreak(a.doneDates)||b.createdAt-a.createdAt);
