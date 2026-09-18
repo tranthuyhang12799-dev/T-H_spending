@@ -367,14 +367,18 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .task-title{font-size:14px;font-weight:600;color:var(--text);word-break:break-word}
 .task-streak{font-size:11.5px;color:var(--text3);margin-top:2px}
 .task-streak.active{color:var(--accent2);font-weight:600}
-.task-check-today{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff}
-.task-check-today.done{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent}
+.task-check-today{width:32px;height:32px;border-radius:50%;border:2px solid #cfd3e8;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:#a7acc9;background:#fff}
+.task-check-today.done{background:#8B9DE0;border-color:transparent;color:#fff}
+.task-item.tc-pink .task-check-today{border-color:#f4c2d7;color:#e8a4c2}
+.task-item.tc-pink .task-check-today.done{background:#EE8FBA;border-color:transparent;color:#fff}
+.task-day{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.tdd-dot{width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid #cfd3e8;display:flex;align-items:center;justify-content:center;font-size:11px;color:#a7acc9}
+.task-day.done .tdd-dot{background:#8B9DE0;border-color:transparent;color:#fff}
+.task-item.tc-pink .tdd-dot{border-color:#f4c2d7;color:#e8a4c2}
+.task-item.tc-pink .task-day.done .tdd-dot{background:#EE8FBA;border-color:transparent;color:#fff}
+.task-day.today .tdd-dot{box-shadow:0 0 0 2px var(--accent-dim)}
 .task-del{flex-shrink:0;background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:4px}
 .task-days-row{display:flex;justify-content:space-between;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
-.task-day{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
-.tdd-dot{width:24px;height:24px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff}
-.task-day.done .tdd-dot{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent}
-.task-day.today .tdd-dot{box-shadow:0 0 0 2px var(--accent-dim)}
 .tdd-label{font-size:10px;color:var(--text3)}
 .task-empty{text-align:center;color:var(--text3);font-size:13.5px;padding:30px 10px}
 .task-hist-run{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:10px;padding:8px 12px;margin-top:6px;font-size:13px}
@@ -2144,7 +2148,6 @@ function renderTasksScreen(){
     </div>`;
   }
   if(!tasks.length){
-    html+='<div class="task-empty">Chưa có nhiệm vụ nào. Thêm nhiệm vụ đầu tiên phía trên và đánh dấu hoàn thành mỗi ngày để giữ chuỗi!</div>';
     el.innerHTML=html;
     return;
   }
@@ -2174,7 +2177,8 @@ function renderTasksScreen(){
   const today=toDateStr(new Date());
   const dayLabels=['CN','T2','T3','T4','T5','T6','T7'];
   const sorted=[...tasks].sort((a,b)=>taskStreak(b.doneDates)-taskStreak(a.doneDates)||b.createdAt-a.createdAt);
-  html+=sorted.map(t=>{
+  html+=sorted.map((t,idx)=>{
+    const colorCls=idx%2===1?' tc-pink':'';
     const doneToday=t.doneDates.includes(today);
     const streak=taskStreak(t.doneDates);
     const set=new Set(t.doneDates);
@@ -2192,16 +2196,16 @@ function renderTasksScreen(){
       const ds=toDateStr(d);
       const isDone=set.has(ds);
       const isToday=ds===today;
-      days+=`<div class="task-day${isDone?' done':''}${isToday?' today':''}"><span class="tdd-dot">${isDone?'✓':''}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
+      days+=`<div class="task-day${isDone?' done':''}${isToday?' today':''}"><span class="tdd-dot">${isDone?'✓':'✕'}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
     }
-    return`<div class="task-item">
+    return`<div class="task-item${colorCls}">
       <div class="task-item-top">
         <div class="task-main">
           <div class="task-title">${t.text.replace(/</g,'&lt;')}</div>
           <div class="task-streak${streak>0?' active':''}">🔥 ${streak} ngày liên tiếp</div>
           ${rangeLabel}
         </div>
-        <div class="task-check-today${doneToday?' done':''}${outOfRange?' disabled':''}" onclick="${outOfRange?'':`toggleTaskToday('${t.id}')`}">${doneToday?'✓':''}</div>
+        <div class="task-check-today${doneToday?' done':''}${outOfRange?' disabled':''}" onclick="${outOfRange?'':`toggleTaskToday('${t.id}')`}">${doneToday?'✓':'✕'}</div>
         <button class="task-del" onclick="deleteTask('${t.id}')">🗑️</button>
       </div>
       <div class="task-days-row">${days}</div>
