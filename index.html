@@ -1732,7 +1732,8 @@ function viewerZoomReset(){
   applyViewerTransform();
 }
 function viewerPointerDown(e){
-  try{e.target.setPointerCapture(e.pointerId);}catch(err){}
+  const stage=document.getElementById('viewer-stage');
+  try{stage.setPointerCapture(e.pointerId);}catch(err){}
   vPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(vPointers.size===2){
     const pts=[...vPointers.values()];
@@ -3060,7 +3061,6 @@ function signInGoogle(){
   auth.signInWithPopup(provider).catch(e=>{
     console.error(e);
     if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment'||e.code==='auth/popup-closed-by-user'){
-      try{localStorage.setItem('th_redirect_attempted','1');}catch(err){}
       auth.signInWithRedirect(provider).catch(e2=>{console.error(e2);showToast('Đăng nhập thất bại: '+(e2.code||e2.message));});
     }else{
       showToast('Đăng nhập thất bại: '+(e.code||e.message));
@@ -3072,19 +3072,13 @@ function signOutUser(){
 }
 if(auth){
   auth.getRedirectResult().then(result=>{
-    // Chỉ hiện gợi ý này khi ngay trước đó ta đã chủ động gọi signInWithRedirect
-    // (đánh dấu bằng cờ localStorage) mà vẫn không có user — tránh hiện tràn lan
-    // mỗi lần F5/mở lại app, vì lúc getRedirectResult() trả về thì Firebase
-    // thường CHƯA kịp khôi phục phiên đăng nhập đã lưu (auth.currentUser vẫn
-    // đang null tạm thời), nên kiểm tra !auth.currentUser một mình là không đủ.
-    let justAttemptedRedirect=false;
-    try{
-      if(localStorage.getItem('th_redirect_attempted')==='1'){
-        justAttemptedRedirect=true;
-        localStorage.removeItem('th_redirect_attempted');
-      }
-    }catch(err){}
-    if(justAttemptedRedirect&&!result.user&&isStandalonePWA()&&!auth.currentUser){
+    // Nếu vừa quay lại từ signInWithRedirect mà vẫn không có user — đây chính
+    // là triệu chứng bug ITP nói trên. Gợi ý người dùng mở bằng Safari thường
+    // (không phải icon đã ghim) để đăng nhập lần đầu; sau đó phiên đăng nhập
+    // sẽ được lưu vào localStorage của cùng origin và app ghim màn hình chính
+    // sẽ tự nhận ra khi mở lại, vì localStorage (khác sessionStorage) vẫn
+    // được chia sẻ giữa Safari thường và app standalone.
+    if(!result.user&&isStandalonePWA()&&!auth.currentUser){
       showToast('Nếu đăng nhập không vào được, hãy mở link app bằng Safari thường (không phải icon đã ghim) để đăng nhập lần đầu, sau đó quay lại icon đã ghim.');
     }
   }).catch(e=>{console.error(e);if(e&&e.code)showToast('Đăng nhập thất bại: '+e.code);});
