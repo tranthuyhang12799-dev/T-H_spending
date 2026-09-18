@@ -289,6 +289,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .gh-photo-count b{color:var(--text);font-weight:700}
 .gh-summary-row{display:flex;gap:10px;flex-shrink:0}
 .gh-summary-card{flex:1;display:flex;align-items:center;gap:10px;background:var(--surface);border:0.5px solid var(--border);border-radius:16px;padding:12px 14px}
+.gh-summary-eye{width:30px;height:30px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:13px;cursor:pointer;flex-shrink:0;margin-left:auto;display:flex;align-items:center;justify-content:center}
 .gh-summary-icon{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
 .gh-summary-icon.expense{background:rgba(239,68,68,0.16);color:#ef4444}
 .gh-summary-icon.income{background:rgba(34,197,94,0.16);color:#22c55e}
@@ -1392,7 +1393,7 @@ function updateThumbPreview(){
   p.innerHTML=photos.length>0?`<img src="${photos[0].dataUrl}" alt="">`:'<span>📁</span>';
 }
 
-let galleryViewMode='month',amountsHidden=false,selectedDayStr=null;
+let galleryViewMode='month',amountsHidden=false,incomeCardHidden=true,selectedDayStr=null;
 function greetingParts(){
   const h=new Date().getHours();
   if(h<11)return['Chào buổi sáng','🌤️'];
@@ -1404,9 +1405,16 @@ function setGalleryView(mode){galleryViewMode=mode;renderGallery();}
 function toggleAmountsHidden(){
   amountsHidden=!amountsHidden;
   renderGallery();
+  if(document.getElementById('s-stats').classList.contains('active'))renderStats();
   if(document.getElementById('s-settings').classList.contains('active'))renderSettingsUI();
 }
+function toggleIncomeCardHidden(){
+  incomeCardHidden=!incomeCardHidden;
+  renderGallery();
+  if(document.getElementById('s-stats').classList.contains('active'))renderStats();
+}
 function maskAmount(str){return amountsHidden?'••••••':str;}
+function maskIncomeCard(str){return incomeCardHidden?'••••••':str;}
 
 function renderGallery(){
   const el=document.getElementById('s-gallery');
@@ -1439,11 +1447,10 @@ function renderGallery(){
       </div>
       ${galleryViewMode==='month'?`<div class="gh-photo-count" onclick="openMonthPhotoList()" style="cursor:pointer">📷 <b>${monthPhotoCount}</b></div>`:''}
     </div>
-    <button class="gh-icon-btn" onclick="toggleAmountsHidden()">${amountsHidden?'🙈':'👁️'}</button>
   </div>
   <div class="gh-summary-row">
-    <div class="gh-summary-card expense"><div class="gh-summary-icon expense">↗</div><div class="gh-summary-body"><div class="gh-summary-label">Chi</div><div class="gh-summary-val">${maskAmount('-'+formatVND(monthExpense))}</div></div></div>
-    <div class="gh-summary-card income"><div class="gh-summary-icon income">↙</div><div class="gh-summary-body"><div class="gh-summary-label">Thu</div><div class="gh-summary-val">${maskAmount('+'+formatVND(monthIncome))}</div></div></div>
+    <div class="gh-summary-card expense"><div class="gh-summary-icon expense">↗</div><div class="gh-summary-body"><div class="gh-summary-label">Chi</div><div class="gh-summary-val">${maskAmount('-'+formatVND(monthExpense))}</div></div><button class="gh-summary-eye" onclick="toggleAmountsHidden()">${amountsHidden?'🙈':'👁️'}</button></div>
+    <div class="gh-summary-card income"><div class="gh-summary-icon income">↙</div><div class="gh-summary-body"><div class="gh-summary-label">Thu</div><div class="gh-summary-val">${maskIncomeCard('+'+formatVND(monthIncome))}</div></div><button class="gh-summary-eye" onclick="toggleIncomeCardHidden()">${incomeCardHidden?'🙈':'👁️'}</button></div>
   </div>`;
 
   if(galleryViewMode==='month'){
@@ -2642,8 +2649,8 @@ function renderAnalysis(){
     <button class="cal-nav-btn" onclick="changeAnalysisMonth(1)">›</button>
   </div>
   <div class="an-summary-row">
-    <div class="gh-summary-card expense"><div class="gh-summary-icon expense">↗</div><div class="gh-summary-body"><div class="gh-summary-label">Chi</div><div class="gh-summary-val">${maskAmount('-'+formatVND(totalExpense))}</div></div></div>
-    <div class="gh-summary-card income"><div class="gh-summary-icon income">↙</div><div class="gh-summary-body"><div class="gh-summary-label">Thu</div><div class="gh-summary-val">${maskAmount('+'+formatVND(totalIncome))}</div></div></div>
+    <div class="gh-summary-card expense"><div class="gh-summary-icon expense">↗</div><div class="gh-summary-body"><div class="gh-summary-label">Chi</div><div class="gh-summary-val">${maskAmount('-'+formatVND(totalExpense))}</div></div><button class="gh-summary-eye" onclick="toggleAmountsHidden()">${amountsHidden?'🙈':'👁️'}</button></div>
+    <div class="gh-summary-card income"><div class="gh-summary-icon income">↙</div><div class="gh-summary-body"><div class="gh-summary-label">Thu</div><div class="gh-summary-val">${maskIncomeCard('+'+formatVND(totalIncome))}</div></div><button class="gh-summary-eye" onclick="toggleIncomeCardHidden()">${incomeCardHidden?'🙈':'👁️'}</button></div>
   </div>`;
 
   if(!expensePhotos.length){
