@@ -12,11 +12,10 @@
 (function(){
   try{
     var t=localStorage.getItem('th_theme');
-    var metaColors={warm:'#FBEEDC',peach:'#FFF0F3',white:'#FFFFFF',mint:'#EEF7F0'};
-    if(t&&metaColors[t]){
-      document.documentElement.setAttribute('data-theme',t);
+    if(t==='warm'){
+      document.documentElement.setAttribute('data-theme','warm');
       var m=document.getElementById('meta-theme-color');
-      if(m)m.setAttribute('content',metaColors[t]);
+      if(m)m.setAttribute('content','#FBEEDC');
     }
   }catch(e){}
 })();
@@ -31,8 +30,6 @@
 :root{--bg:#0d0d0f;--surface:#1c1c1f;--surface2:#28282c;--border:#3a3a40;--accent:#3b82f6;--accent2:#a855f7;--accent-rgb:59,130,246;--accent2-rgb:168,85,247;--accent-dim:rgba(59,130,246,0.16);--text:#f5f5f7;--text2:#a1a1aa;--text3:#6b6b72;--nav-bg:rgba(20,20,23,0.85);--card-shadow:rgba(0,0,0,0.5);--safe-top:env(safe-area-inset-top,44px);--safe-bottom:env(safe-area-inset-bottom,20px)}
 :root[data-theme="warm"]{--bg:#FBEEDC;--surface:#FFFFFF;--surface2:#FFF6E8;--border:#EAD6B0;--accent:#F5A623;--accent2:#FF7A45;--accent-rgb:245,166,35;--accent2-rgb:255,122,69;--accent-dim:rgba(245,166,35,0.16);--text:#2E2010;--text2:#5E3F25;--text3:#956B3E;--nav-bg:rgba(255,255,255,0.9);--card-shadow:rgba(120,90,40,0.18)}
 :root[data-theme="peach"]{--bg:#FFF0F3;--surface:#FFFFFF;--surface2:#FFE4EC;--border:#FFCBDA;--accent:#FF8FAB;--accent2:#FFB4A2;--accent-rgb:255,143,171;--accent2-rgb:255,180,162;--accent-dim:rgba(255,143,171,0.16);--text:#3D1E28;--text2:#7A3F50;--text3:#B86878;--nav-bg:rgba(255,255,255,0.9);--card-shadow:rgba(255,143,171,0.2)}
-:root[data-theme="white"]{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F5F6F8;--border:#E4E6EA;--accent:#2563EB;--accent2:#0EA5E9;--accent-rgb:37,99,235;--accent2-rgb:14,165,233;--accent-dim:rgba(37,99,235,0.1);--text:#111318;--text2:#5B6270;--text3:#9AA1AC;--nav-bg:rgba(255,255,255,0.92);--card-shadow:rgba(20,20,30,0.08)}
-:root[data-theme="mint"]{--bg:#EEF7F0;--surface:#FFFFFF;--surface2:#F5FAF6;--border:#DDEAE1;--accent:#4CA97C;--accent2:#7FCBA4;--accent-rgb:76,169,124;--accent2-rgb:127,203,164;--accent-dim:rgba(76,169,124,0.13);--text:#20362B;--text2:#5B7268;--text3:#94A69C;--nav-bg:rgba(255,255,255,0.92);--card-shadow:rgba(76,169,124,0.14)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:'Be Vietnam Pro',-apple-system,sans-serif;overflow:hidden;position:fixed;display:flex;justify-content:center}
 #app{width:100%;max-width:480px;height:100%;display:flex;flex-direction:column;box-shadow:0 0 40px var(--card-shadow);position:relative}
@@ -64,16 +61,9 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .loc-pill{flex-shrink:0;display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.5);border:0.5px solid rgba(255,255,255,0.15);border-radius:12px;padding:9px 14px;font-size:12.5px;color:rgba(255,255,255,0.85);cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap;font-family:inherit}
 .loc-pill.active{background:linear-gradient(135deg,var(--accent),#22c55e);border-color:transparent;color:#fff;font-weight:600}
 .loc-pill.loading{opacity:0.6}
-.cat-pills{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;flex-shrink:0}
+.cat-pills{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
 .cat-pills::-webkit-scrollbar{display:none}
-.cat-pills.cat-pills-wrap{flex-wrap:wrap;overflow:visible;padding-bottom:0}
-/* Trên máy tính (chuột, không chạm) không kéo ngang được vì thanh cuộn bị ẩn,
-   nên tự xuống dòng để thấy hết danh mục. Điện thoại (chạm) vẫn giữ cuộn ngang
-   như cũ — không đổi hành vi trên mobile. */
-@media (hover:hover) and (pointer:fine){
-  .cat-pills.cat-pills-light{flex-wrap:wrap;overflow:visible;padding-bottom:0}
-}
-.cat-pill{flex-shrink:0;display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.5);border:0.5px solid rgba(255,255,255,0.15);border-radius:14px;padding:6px 10px;font-size:11.5px;color:rgba(255,255,255,0.75);cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap;font-family:inherit;line-height:1.4}
+.cat-pill{flex-shrink:0;display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.5);border:0.5px solid rgba(255,255,255,0.15);border-radius:14px;padding:6px 10px;font-size:11.5px;color:rgba(255,255,255,0.75);cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap;font-family:inherit}
 .cat-pill.active{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;color:#fff;font-weight:600}
 .ph-cat-icon{position:absolute;top:5px;left:5px;font-size:14px;background:rgba(0,0,0,0.45);border-radius:8px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .viewer-cat{display:inline-block;margin-left:8px;font-size:12px;color:rgba(255,255,255,0.6)}
@@ -114,21 +104,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .allow-btn{background:var(--accent);color:#fff;border:none;border-radius:14px;padding:13px 28px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit}
 /* FLASH */
 #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:999;transition:opacity .08s}
-/* APP LOCK */
-.applock-screen{position:fixed;inset:0;z-index:5000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center}
-.applock-screen.open{display:flex}
-.applock-icon{width:72px;height:72px;border-radius:22px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:34px}
-.applock-title{font-size:18px;font-weight:700;color:var(--text)}
-.applock-sub{font-size:13px;color:var(--text2);max-width:260px;line-height:1.6}
-.applock-pwd-input{width:100%;max-width:240px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;font-size:20px;letter-spacing:6px;text-align:center;color:var(--text);font-family:inherit;outline:none}
-.applock-btn{width:100%;max-width:240px;padding:14px;border-radius:14px;background:var(--accent);color:#fff;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
-.applock-bio-btn{width:72px;height:72px;border-radius:50%;background:var(--accent-dim);border:none;font-size:30px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.applock-err{font-size:12.5px;color:#ef4444;min-height:16px}
-/* APP LOCK SETTINGS MODAL */
-.applock-method-row{display:flex;gap:8px;margin:10px 0 4px}
-.applock-method-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:14px;background:var(--surface2);border:1.5px solid transparent;cursor:pointer;font-family:inherit;color:var(--text2);font-size:12.5px;font-weight:600}
-.applock-method-btn.active{border-color:var(--accent);color:var(--text);background:var(--accent-dim)}
-.applock-method-icon{font-size:22px}
 /* GALLERY */
 #s-gallery{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 14px calc(var(--safe-bottom) + 14px);gap:20px;align-items:stretch}
 #s-gallery::-webkit-scrollbar{display:none}
@@ -206,10 +181,11 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .va-btn.share{background:var(--accent-dim);color:var(--accent)}
 .va-btn.expense-edit{background:linear-gradient(135deg,rgba(var(--accent-rgb),0.18),rgba(var(--accent2-rgb),0.18));color:var(--accent)}
 /* DAY SUMMARY */
-#monthlist{position:fixed;inset:0;z-index:99;background:var(--bg);display:none;flex-direction:column}
+#monthlist{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center}
 #monthlist.open{display:flex}
-.ml-header{padding:calc(var(--safe-top) + 8px) 16px 10px;display:flex;align-items:center;gap:10px;flex-shrink:0;border-bottom:0.5px solid var(--border)}
-.ml-close{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:none;cursor:pointer;font-size:16px;color:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ml-sheet{background:var(--bg);width:100%;max-width:440px;height:82vh;border-radius:24px 24px 0 0;display:flex;flex-direction:column;animation:calUp .22s ease;overflow:hidden;box-shadow:0 -8px 30px var(--card-shadow)}
+.ml-header{padding:16px 16px 10px;display:flex;align-items:center;gap:10px;flex-shrink:0;border-bottom:0.5px solid var(--border)}
+.ml-close{width:32px;height:32px;border-radius:50%;background:var(--surface2);border:none;cursor:pointer;font-size:15px;color:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ml-title{flex:1;font-size:15px;font-weight:700}
 .ml-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px calc(var(--safe-bottom) + 14px);display:flex;flex-direction:column;gap:18px}
 .ml-scroll::-webkit-scrollbar{display:none}
@@ -227,9 +203,9 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .ds-total.expense{color:#fb923c}
 .ds-total.income{color:#4ade80}
 .ds-total.mixed{color:#fff}
-.ds-scroll{display:flex;gap:12px;overflow-x:auto;padding:0 16px calc(var(--safe-bottom) + 20px);-webkit-overflow-scrolling:touch;flex:1;align-content:flex-start}
+.ds-scroll{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;overflow-y:auto;overflow-x:hidden;padding:0 16px calc(var(--safe-bottom) + 20px);-webkit-overflow-scrolling:touch;flex:1;align-content:flex-start}
 .ds-scroll::-webkit-scrollbar{display:none}
-.ds-card{flex-shrink:0;width:132px;height:132px;position:relative;border-radius:16px;overflow:hidden;background:#1c1c1f;cursor:pointer}
+.ds-card{width:100%;aspect-ratio:1/1;position:relative;border-radius:16px;overflow:hidden;background:#1c1c1f;cursor:pointer}
 .ds-card img{width:100%;height:100%;object-fit:cover;display:block}
 .ds-card::after{content:'';position:absolute;left:0;right:0;bottom:0;height:55%;background:linear-gradient(to top,rgba(0,0,0,0.7),transparent);pointer-events:none}
 .ds-card-pill{position:absolute;top:8px;left:8px;font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:20px;color:#fff;z-index:1;white-space:nowrap}
@@ -237,10 +213,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 /* STATS */
 #s-stats{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px calc(var(--safe-bottom) + 14px);gap:16px;align-items:stretch}
 #s-stats::-webkit-scrollbar{display:none}
-#s-tasks{position:relative;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px calc(var(--safe-bottom) + 14px);gap:16px;align-items:stretch}
-#s-tasks::-webkit-scrollbar{display:none}
-.tasks-header-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
-.tasks-header-title{font-size:18px;font-weight:700;color:var(--text)}
 .stats-month-nav{display:flex;align-items:center;justify-content:center;gap:16px;flex-shrink:0}
 .stats-month-title{font-size:15px;font-weight:600;color:var(--text);min-width:120px;text-align:center}
 .stats-summary{display:flex;gap:10px;flex-shrink:0}
@@ -263,7 +235,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .stats-empty .big-icon{font-size:48px}
 .cat-stat-row{cursor:pointer;transition:transform .1s ease}
 .cat-stat-row:active{transform:scale(0.98)}
-.cat-stat-row.active{border-color:var(--accent);background:var(--accent-dim)}
 .cd-summary{display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:14px;padding:12px 14px;margin-bottom:14px}
 .cd-summary-icon{font-size:26px}
 .cd-summary-info{flex:1}
@@ -313,7 +284,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .gh-photo-count b{color:var(--text);font-weight:700}
 .gh-summary-row{display:flex;gap:10px;flex-shrink:0}
 .gh-summary-card{flex:1;display:flex;align-items:center;gap:10px;background:var(--surface);border:0.5px solid var(--border);border-radius:16px;padding:12px 14px}
-.gh-summary-eye{width:30px;height:30px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:13px;cursor:pointer;flex-shrink:0;margin-left:auto;display:flex;align-items:center;justify-content:center}
 .gh-summary-icon{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
 .gh-summary-icon.expense{background:rgba(239,68,68,0.16);color:#ef4444}
 .gh-summary-icon.income{background:rgba(34,197,94,0.16);color:#22c55e}
@@ -354,8 +324,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 /* CALENDAR POPUP */
 .cal-modal{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center}
 .cal-modal.open{display:flex}
-#analysis-modal{bottom:calc(60px + var(--safe-bottom))}
-#analysis-modal .cal-sheet{border-radius:24px;padding-bottom:18px}
 .cal-sheet{background:var(--surface);width:100%;max-width:440px;border-radius:24px 24px 0 0;padding:18px 18px calc(var(--safe-bottom) + 18px);animation:calUp .22s ease}
 @keyframes calUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
@@ -374,82 +342,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .cal-day-amount.expense{color:#ef4444}
 .cal-day-amount.income{color:#22c55e}
 .cal-day-amount.mixed{color:var(--text2)}
-.cal-day-amount-empty{visibility:hidden}
-.cat-stats-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.chart-btn{flex-shrink:0;background:var(--surface);border:1.5px solid var(--accent);color:var(--accent);font-weight:600;font-size:12.5px;border-radius:14px;padding:7px 12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
-.task-add-row{display:flex;gap:8px;margin-bottom:10px}
-.task-add-row input{flex:1;min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 14px;font-size:14px;color:var(--text);font-family:inherit;outline:none}
-.task-add-row button{flex-shrink:0;width:42px;height:42px;border-radius:50%;background:var(--accent);color:#fff;border:none;padding:0;font-size:20px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;line-height:1}
-.task-add-cancel{background:var(--surface2)!important;color:var(--text2)!important;font-size:16px!important}
-.task-fab-fixed{position:absolute;right:18px;bottom:calc(var(--safe-bottom) + 16px);z-index:5}
-.task-add-fab{width:46px;height:46px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:22px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;line-height:1;box-shadow:0 4px 12px var(--accent-dim)}
-.task-add-dates{display:flex;gap:8px;margin-bottom:14px}
-.task-add-date-field{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-.task-add-date-field label{font-size:11px;color:var(--text3);padding-left:2px}
-.task-add-date-field input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:9px 10px;font-size:12.5px;color:var(--text);font-family:inherit;outline:none;color-scheme:light dark}
-.task-range{font-size:11px;color:var(--text3);margin-top:3px}
-.task-countdown{font-size:11px;color:var(--accent);font-weight:600;margin-top:3px}
-.task-countdown-last{color:#f59e0b}
-.task-countdown-ended{color:var(--text3);font-weight:500}
-.task-check-today.disabled{opacity:0.35;cursor:not-allowed}
-.task-edit-colors-label{font-size:11px;color:var(--text3);margin-bottom:6px;padding-left:2px}
-.task-edit-colors{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:2px}
-.task-color-swatch{width:26px;height:26px;border-radius:50%;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);position:relative}
-.task-color-swatch.selected{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--text)}
-.tcal-grid .cal-day{aspect-ratio:auto;min-height:44px;justify-content:flex-start;padding-top:2px}
-.tcal-ticks-row{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;padding:0 1px}
-.tcal-tick{width:11px;height:11px;border-radius:50%;color:#fff;font-size:7px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}
-.tcal-legend{display:flex;flex-wrap:wrap;gap:10px 16px;justify-content:center;margin-top:16px}
-.tcal-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)}
-.tcal-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0}
-.task-item{background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:8px;border-left:4px solid var(--tc,var(--accent))}
-.task-item-top{display:flex;align-items:center;gap:10px}
-.task-main{flex:1;min-width:0}
-.task-title{font-size:14px;font-weight:600;color:var(--text);word-break:break-word}
-.task-ended-badge{display:inline-block;font-size:10px;font-weight:600;color:var(--text3);background:var(--surface2);border-radius:6px;padding:2px 6px;margin-left:4px;vertical-align:middle}
-.task-streak{font-size:11.5px;color:var(--text3);margin-top:2px}
-.task-streak.active{color:var(--accent2);font-weight:600}
-.task-check-today{width:26px;height:26px;border-radius:50%;border:2px solid var(--tc-soft,#cfd3e8);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--tc,#a7acc9);background:#fff}
-.task-check-today.done{background:var(--tc,#8B9DE0);border-color:transparent;color:#fff}
-.task-day{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
-.tdd-dot{width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid var(--tc-soft,#cfd3e8);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--tc,#a7acc9)}
-.task-day.done .tdd-dot{background:var(--tc,#8B9DE0);border-color:transparent;color:#fff}
-.task-day.today .tdd-dot{box-shadow:0 0 0 2px var(--accent-dim)}
-.task-day.future .tdd-dot{background:transparent;border-style:dashed;border-color:var(--border);color:var(--text3);font-size:10px}
-.task-day:not(.done):not(.future):not(.today) .tdd-dot{background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.35);color:#ef4444;font-size:10px}
-.task-day.today:not(.done) .tdd-dot{background:rgba(239,68,68,0.10);border-color:rgba(239,68,68,0.4);color:#ef4444;font-size:10px}
-.task-day.date-editable{cursor:pointer}
-.task-day.date-editable .tdd-dot{box-shadow:0 0 0 2px rgba(var(--accent-rgb),0.4);transform:scale(1.08)}
-.task-edit-active{color:var(--accent)!important;opacity:1!important}
-.task-date-edit-hint{font-size:11px;color:var(--accent);margin:4px 0 -4px 2px;opacity:0.85}
-.task-total-done{display:inline-block;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-dim);border-radius:8px;padding:2px 7px;margin-left:6px;vertical-align:middle}
-.reminder-section-title{font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin:14px 0 8px}
-.reminder-toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:14px;padding:12px 16px;margin-bottom:10px}
-.reminder-toggle-label{font-size:14px;font-weight:600}
-.reminder-toggle-sub{font-size:12px;color:var(--text3);margin-top:2px}
-.toggle-switch{width:44px;height:26px;border-radius:13px;background:var(--border);border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
-.toggle-switch.on{background:var(--accent)}
-.toggle-switch::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
-.toggle-switch.on::after{transform:translateX(18px)}
-.reminder-time-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:14px;padding:12px 16px;margin-bottom:10px}
-.reminder-time-label{flex:1;font-size:14px;font-weight:600}
-.reminder-time-input{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 12px;font-size:14px;font-weight:600;color:var(--text);font-family:inherit;outline:none;color-scheme:light dark;width:110px;text-align:center}
-.reminder-task-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
-.reminder-task-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:12px;padding:10px 14px}
-.reminder-task-name{flex:1;font-size:13px;font-weight:500}
-.reminder-note{font-size:11.5px;color:var(--text3);line-height:1.5;text-align:center;padding:10px 4px 4px}
-.reminder-save-btn{width:100%;padding:13px;border-radius:14px;background:var(--accent);color:#fff;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px}
-.task-del{flex-shrink:0;background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:2px}
-.task-edit{flex-shrink:0;background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:2px}
-.task-days-row{display:flex;justify-content:space-between;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
-.task-days-row.scrollable{justify-content:flex-start;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.task-days-row.scrollable::-webkit-scrollbar{display:none}
-.task-days-row.scrollable .task-day{flex:0 0 30px}
-.tdd-label{font-size:10px;color:var(--text3)}
-.task-empty{text-align:center;color:var(--text3);font-size:13.5px;padding:30px 10px}
-.task-hist-run{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:10px;padding:8px 12px;margin-top:6px;font-size:13px}
-.task-hist-run .thr-len{font-weight:700;color:var(--accent2)}
-.task-hist-run .thr-range{color:var(--text2);font-size:12px}
 .cal-day.today .cal-day-num{box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:700;color:var(--text)}
 .cal-day.has-photo .cal-day-num{background:var(--accent-dim);color:var(--accent);font-weight:600}
 .cal-day.streak-day .cal-day-num{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:700}
@@ -460,8 +352,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .stack-photo img{width:100%;height:100%;object-fit:cover;display:block}
 .stack-photo.back{transform:rotate(-11deg) translate(-10%,2%);z-index:1}
 .stack-photo.front{transform:rotate(9deg) translate(10%,-2%);z-index:2}
-.stack-photo.solo{transform:rotate(0deg);z-index:2}
-.cal-day-stack-badge{position:absolute;bottom:2px;left:50%;transform:translate(-50%,0);background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:2px 6px;z-index:3;box-shadow:0 1px 3px var(--card-shadow);line-height:1.3}
+.cal-day-stack-badge{position:absolute;bottom:0;left:50%;transform:translate(-50%,35%);background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:2px 6px;z-index:3;box-shadow:0 1px 3px var(--card-shadow);line-height:1.3}
 .cal-day.has-photo,.cal-day.streak-day{cursor:pointer}
 .cal-day.selected .cal-day-thumb-wrap{box-shadow:inset 0 0 0 2px var(--accent)}
 .cal-day-photos{max-height:0;overflow:hidden;transition:max-height .25s ease}
@@ -513,7 +404,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 </head>
 <body>
 <div id="flash"></div>
-<input type="file" id="library-file-input" accept="image/*" style="display:none" onchange="handleLibraryFile(event)">
 
 <div id="login-screen" class="login-screen">
   <div class="login-card">
@@ -526,23 +416,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
     </button>
     <p class="login-note" id="login-safari-hint" style="display:none">Nếu đăng nhập xong bị quay lại màn hình này: đây là hạn chế của Safari với app đã ghim màn hình chính. Hãy <a href="." target="_blank" style="color:var(--accent)">mở link này bằng Safari thường</a> để đăng nhập lần đầu, sau đó quay lại icon đã ghim — phiên đăng nhập sẽ tự được nhận.</p>
     <p class="login-note">Ảnh và dữ liệu chi tiêu được lưu trên cloud, gắn với tài khoản Google — không lưu trên máy.</p>
-  </div>
-</div>
-
-<div id="applock-screen" class="applock-screen">
-  <div class="applock-icon">🔒</div>
-  <div class="applock-title">Ứng dụng đã khóa</div>
-  <div class="applock-sub" id="applock-sub">Xác thực để tiếp tục</div>
-  <div id="applock-body"></div>
-</div>
-
-<div id="applock-modal" class="cal-modal">
-  <div class="cal-sheet">
-    <div class="cal-header">
-      <div class="cal-title">🔐 Khóa ứng dụng</div>
-      <button class="cal-nav-btn" onclick="closeAppLockSettings()">✕</button>
-    </div>
-    <div id="applock-settings-body"></div>
   </div>
 </div>
 
@@ -571,8 +444,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   <div class="screen" id="s-gallery" style="position:relative"></div>
 
   <div class="screen" id="s-stats"></div>
-  <div class="screen" id="s-tasks"></div>
-  <div class="screen" id="s-settings" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 14px calc(var(--safe-bottom) + 80px)"></div>
 
   <button class="fab-add" id="fab-add" onclick="openFabSheet()">+</button>
 
@@ -603,16 +474,18 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
     <div class="nav-item" onclick="switchTab('camera')">
       <div class="nav-cam-btn" id="nav-cam">📷</div>
     </div>
-    <div class="nav-item" onclick="switchTab('tasks')">
-      <div class="nav-icon" id="nav-tasks">
+    <div class="nav-item" onclick="openAnalysis()">
+      <div class="nav-icon" id="nav-analysis">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 11l3 3L22 4"></path>
-          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+          <line x1="4" y1="20" x2="4" y2="12"></line>
+          <line x1="10" y1="20" x2="10" y2="6"></line>
+          <line x1="16" y1="20" x2="16" y2="14"></line>
+          <line x1="21" y1="20" x2="3" y2="20"></line>
         </svg>
       </div>
-      <div class="nav-label" id="navl-tasks">Nhiệm vụ</div>
+      <div class="nav-label" id="navl-analysis">Phân tích</div>
     </div>
-    <div class="nav-item" onclick="switchTab('settings')">
+    <div class="nav-item" onclick="openSettings()">
       <div class="nav-icon" id="nav-settings" style="font-size:18px">⚙️</div>
       <div class="nav-label" id="navl-settings">Cài đặt</div>
     </div>
@@ -629,8 +502,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   </div>
 </div>
 
-
-
 <div id="fab-sheet-modal" class="cal-modal">
   <div class="cal-sheet">
     <div class="cal-header">
@@ -638,32 +509,30 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
       <button class="cal-nav-btn" onclick="closeFabSheet()">✕</button>
     </div>
     <div class="fab-sheet-list">
-      <div class="fab-sheet-item" onclick="closeFabSheet();pickFromLibrary()"><div class="fab-sheet-icon" style="background:rgba(168,85,247,0.16);color:#a855f7">🖼️</div><div><strong>Chọn ảnh từ thư viện</strong><span>Tải ảnh có sẵn trong máy kèm số tiền</span></div></div>
       <div class="fab-sheet-item" onclick="closeFabSheet();switchTab('camera')"><div class="fab-sheet-icon" style="background:var(--accent-dim);color:var(--accent)">📷</div><div><strong>Chụp ảnh</strong><span>Chụp hoá đơn hoặc khoảnh khắc kèm số tiền</span></div></div>
-      <div class="fab-sheet-item" onclick="closeFabSheet();openManualEntry('expense')"><div class="fab-sheet-icon" style="background:rgba(239,68,68,0.16);color:#ef4444">🧾</div><div><strong>Thêm giao dịch</strong><span>Ghi chi tiêu hoặc thu nhập thủ công, không cần ảnh</span></div></div>
+      <div class="fab-sheet-item" onclick="closeFabSheet();openManualEntry('income')"><div class="fab-sheet-icon" style="background:rgba(34,197,94,0.16);color:#22c55e">💵</div><div><strong>Thêm thu nhập</strong><span>Lương, thưởng... không cần ảnh</span></div></div>
+      <div class="fab-sheet-item" onclick="closeFabSheet();openManualEntry('expense')"><div class="fab-sheet-icon" style="background:rgba(239,68,68,0.16);color:#ef4444">🧾</div><div><strong>Thêm chi tiêu</strong><span>Ghi chi tiêu thủ công không cần ảnh</span></div></div>
     </div>
   </div>
 </div>
 
-
-
-<div id="reminder-modal" class="cal-modal">
+<div id="settings-modal" class="cal-modal">
   <div class="cal-sheet">
     <div class="cal-header">
-      <div class="cal-title">🔔 Nhắc nhở nhiệm vụ</div>
-      <button class="cal-nav-btn" onclick="closeReminderSettings()">✕</button>
+      <div class="cal-title">⚙️ Cài đặt</div>
+      <button class="cal-nav-btn" onclick="closeSettings()">✕</button>
     </div>
-    <div id="reminder-body"></div>
-  </div>
-</div>
-
-<div id="theme-modal" class="cal-modal">
-  <div class="cal-sheet">
-    <div class="cal-header">
-      <div class="cal-title">🎨 Giao diện</div>
-      <button class="cal-nav-btn" onclick="closeThemeSettings()">✕</button>
+    <div class="fr-me" id="settings-me"></div>
+    <div class="fr-add-row" id="settings-name-row">
+      <input type="text" id="settings-name-input" placeholder="Nhập tên hiển thị của bạn" maxlength="30">
+      <button onclick="saveDisplayNameFromInput()">Lưu</button>
     </div>
-    <div id="theme-body"></div>
+    <div class="fab-sheet-list" id="settings-list"></div>
+    <div class="fr-section-title">Giao diện</div>
+    <div class="theme-picker-box" id="settings-theme-list"></div>
+    <div class="cal-actions">
+      <button class="cal-close-btn" style="flex:1;color:#ef4444" onclick="signOutUser()">Đăng xuất</button>
+    </div>
   </div>
 </div>
 
@@ -692,6 +561,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
     <a class="viewer-location" id="viewer-location" style="display:none" target="_blank" rel="noopener">📍 Xem trên Google Maps</a>
     <div class="viewer-actions">
       <button class="va-btn expense-edit" id="viewer-expense-btn" onclick="openExpenseEdit(currentViewerId)">💰 Thêm chi tiêu</button>
+      <button class="va-btn share" onclick="sharePhoto()">Chia sẻ</button>
       <button class="va-btn delete" onclick="deletePhoto()">Xoá</button>
     </div>
   </div>
@@ -706,12 +576,14 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   <div class="ds-scroll" id="ds-scroll"></div>
 </div>
 
-<div id="monthlist">
-  <div class="ml-header">
-    <button class="ml-close" onclick="closeMonthPhotoList()">✕</button>
-    <div class="ml-title" id="ml-title"></div>
+<div id="monthlist" onclick="if(event.target===this)closeMonthPhotoList()">
+  <div class="ml-sheet">
+    <div class="ml-header">
+      <button class="ml-close" onclick="closeMonthPhotoList()">✕</button>
+      <div class="ml-title" id="ml-title"></div>
+    </div>
+    <div class="ml-scroll" id="ml-scroll"></div>
   </div>
-  <div class="ml-scroll" id="ml-scroll"></div>
 </div>
 
 
@@ -811,19 +683,6 @@ try{
 }
 const auth=firebaseOk?firebase.auth():null;
 const db=firebaseOk?firebase.firestore():null;
-if(db){
-  // Bật lưu trệm ngoại tuyến: các thao tác thêm/sửa/xoá (nhiệm vụ, ảnh...)
-  // được ghi vào IndexedDB ngay lập tức và tự động gửi tiếp lên Firestore khi
-  // có mạng trở lại — kể cả khi người dùng tắt app/mất mạng ngay sau khi thao
-  // tác, trước khi kịp đồng bộ lên cloud. Nếu không có bước này, một thao tác
-  // vừa thực hiện có thể bị mất hẳn nếu app bị đóng trước khi request mạng
-  // kịp hoàn tất.
-  // 'failed-precondition': đang mở nhiều tab cùng lúc (rất hiếm khi xảy ra
-  // với synchronizeTabs bật). 'unimplemented': trình duyệt không hỗ trợ.
-  // Trong cả hai trường hợp app vẫn hoạt động bình thường, chỉ là không có
-  // lớp bảo vệ ngoại tuyến này — không cần báo cho người dùng hay log ra.
-  db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
-}
 let currentUser=null;
 let photosUnsub=null;
 
@@ -834,11 +693,9 @@ let photosUnsub=null;
 // ====== THEME ======
 const THEME_KEY='th_theme';
 const THEMES={
-  dark:{label:'Black',desc:'Giao diện gốc: nền tối, nhấn gradient xanh dương - tím',icon:'🌌',metaColor:'#0D0D0F',swatch:['#0d0d0f','#3b82f6','#a855f7']},
-  warm:{label:'Yellow',desc:'Nền kem sáng, nhấn cam vàng',icon:'🧡',metaColor:'#FBEEDC',swatch:['#FBEEDC','#F5A623','#FF7A45']},
-  peach:{label:'Pink',desc:'Nền hồng phấn nhạt, nhấn hồng đào dễ thương',icon:'🌸',metaColor:'#FFF0F3',swatch:['#FFF0F3','#FF8FAB','#FFB4A2']},
-  white:{label:'White',desc:'Nền trắng tinh gọn, nhấn xanh dương hiện đại',icon:'⚪',metaColor:'#FFFFFF',swatch:['#FFFFFF','#2563EB','#0EA5E9']},
-  mint:{label:'Mint',desc:'Nền xanh lá pastel dịu mắt, nhấn xanh mint tươi mát',icon:'🌿',metaColor:'#EEF7F0',swatch:['#EEF7F0','#4CA97C','#7FCBA4']}
+  dark:{label:'Đen',desc:'Giao diện gốc: nền tối, nhấn gradient xanh dương - tím',icon:'🌌',metaColor:'#0D0D0F',swatch:['#0d0d0f','#3b82f6','#a855f7']},
+  warm:{label:'Ấm áp',desc:'Nền kem sáng, nhấn cam vàng',icon:'🧡',metaColor:'#FBEEDC',swatch:['#FBEEDC','#F5A623','#FF7A45']},
+  peach:{label:'Hồng đào',desc:'Nền hồng phấn nhạt, nhấn hồng đào dễ thương',icon:'🌸',metaColor:'#FFF0F3',swatch:['#FFF0F3','#FF8FAB','#FFB4A2']}
 };
 function getTheme(){
   try{const t=localStorage.getItem(THEME_KEY);return THEMES[t]?t:'dark';}catch(e){return 'dark';}
@@ -855,26 +712,7 @@ function setTheme(theme){
   if(!THEMES[theme]||theme===getTheme())return;
   applyTheme(theme);
   renderSettingsUI();
-  if(document.getElementById('theme-modal').classList.contains('open'))renderThemeUI();
   showToast(`${THEMES[theme].icon} Đã chuyển sang giao diện ${THEMES[theme].label}`);
-}
-function openThemeSettings(){
-  document.getElementById('theme-modal').classList.add('open');
-  renderThemeUI();
-}
-function closeThemeSettings(){
-  document.getElementById('theme-modal').classList.remove('open');
-}
-function renderThemeUI(){
-  const current=getTheme();
-  const themeSwatches=Object.keys(THEMES).map(id=>{
-    const th=THEMES[id];
-    return`<button class="theme-swatch-btn${id===current?' active':''}" onclick="setTheme('${id}')" title="${th.desc}">
-      <div class="theme-swatch-circle" style="background:linear-gradient(135deg,${th.swatch[1]},${th.swatch[2]})">${id===current?'<span class="theme-swatch-check">✓</span>':''}</div>
-      <div class="theme-swatch-label">${th.icon} ${th.label}</div>
-    </button>`;
-  }).join('');
-  document.getElementById('theme-body').innerHTML=`<div class="theme-picker-box">${themeSwatches}</div>`;
 }
 
 // ====== DISPLAY NAME (tên tự nhập, hiện ở lời chào) ======
@@ -1036,9 +874,12 @@ function flipCamera(){
 const EXPENSE_CATS=[
   {id:'an-uong',icon:'🍙',label:'Ăn uống',color:'#22c55e'},
   {id:'di-chuyen',icon:'🚕',label:'Di chuyển',color:'#3b82f6'},
-  {id:'vat-dung-ca-nhan',icon:'<img src="data:image/jpeg;base64,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" style="width:1em;height:1em;object-fit:cover;border-radius:0.3em;vertical-align:-0.15em;display:inline-block">',label:'Vật dụng cá nhân',color:'#a855f7'},
+  {id:'vat-dung-ca-nhan',icon:'🧴',label:'Vật dụng cá nhân',color:'#a855f7'},
   {id:'mua-sam',icon:'🛍️',label:'Mua sắm',color:'#ec4899'},
   {id:'xa-giao',icon:'🎉',label:'Xã giao',color:'#f97316'},
+  {id:'hoa-don',icon:'🧾',label:'Hoá đơn',color:'#ef4444'},
+  {id:'nha-o',icon:'🏠',label:'Nhà ở',color:'#14b8a6'},
+  {id:'giai-tri',icon:'🎬',label:'Giải trí',color:'#8b5cf6'},
   {id:'suc-khoe',icon:'🩹',label:'Sức khoẻ',color:'#f43f5e'},
   {id:'giao-duc',icon:'📚',label:'Giáo dục',color:'#6366f1'},
   {id:'vo-hinh',icon:'👻',label:'Chi phí vô hình',color:'#6b7280'},
@@ -1278,8 +1119,7 @@ function formatVND(n){return Number(n).toLocaleString('vi-VN')+'đ';}
 function formatCompactVND(n){
   const abs=Math.abs(Number(n)||0);
   if(abs>=1000000)return(abs/1000000).toFixed(1)+'tr';
-  if(abs<1000)return abs.toLocaleString('vi-VN')+'đ';
-  return Math.round(abs/1000)+'K';
+  return Math.round(abs/1000)+'k';
 }
 function resetMoneyRow(){
   moneyRowOpen=false;moneyType='expense';selectedCategory='khac';capturedLocation=null;categoryTouched=false;
@@ -1320,103 +1160,21 @@ function sizeDataUrlForFirestore(sourceCanvas,maxLen){
   return dataUrl;
 }
 
-function pickFromLibrary(){
-  document.getElementById('library-file-input').value='';
-  document.getElementById('library-file-input').click();
-}
-
-function handleLibraryFile(event){
-  const file=event.target.files&&event.target.files[0];
-  if(!file)return;
-  if(!file.type.startsWith('image/')){showToast('Vui lòng chọn một tệp ảnh');return;}
-  const reader=new FileReader();
-  reader.onload=()=>showLibraryPreview(reader.result);
-  reader.onerror=()=>showToast('Không đọc được ảnh, thử lại nhé');
-  reader.readAsDataURL(file);
-}
-
-// Hiển thị ảnh đã chọn từ thư viện lên đúng khung máy ảnh, dùng chung toàn bộ
-// form caption/số tiền/danh mục sẵn có. capturePhoto() sẽ nhận diện phần tử
-// #video là <img> (thay vì <video>) để lưu lại đúng ảnh này khi bấm nút lưu.
-function showLibraryPreview(dataUrl){
-  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
-  switchTab('camera',true);
-  const wrap=document.getElementById('vf-wrap');
-  wrap.innerHTML=`
-    <img id="video" src="${dataUrl}" style="width:100%;height:100%;object-fit:contain;background:#000;display:block">
-    <div class="vf-overlay">
-      <div class="vf-top">
-        <div class="date-chip" id="date-chip"></div>
-        <div class="vf-top-btns">
-          <div class="vf-btn" onclick="cancelLibraryPreview()">✕</div>
-        </div>
-      </div>
-      <div class="vf-bottom">
-        <div class="money-row">
-          <div class="money-toggle" id="money-toggle" onclick="toggleMoneyRow()">💰 Thêm chi tiêu</div>
-          <div class="money-fields" id="money-fields" style="display:none">
-            <div class="money-fields-row">
-              <div class="money-type">
-                <button type="button" class="money-type-btn active" data-type="expense" onclick="setMoneyType('expense',this)">Chi</button>
-                <button type="button" class="money-type-btn" data-type="income" onclick="setMoneyType('income',this)">Thu</button>
-              </div>
-              <input id="amount-input" type="number" inputmode="numeric" placeholder="Số tiền (đ)">
-            </div>
-            <div class="money-fields-row">
-              <input id="time-input" type="time">
-              <div class="loc-pill" id="loc-pill" onclick="captureLocation()">📍 Lấy vị trí</div>
-            </div>
-            <div class="cat-pills" id="cat-pills"></div>
-          </div>
-        </div>
-        <input id="caption-input" type="text" placeholder="Thêm caption…" maxlength="80" oninput="onCaptionInput()">
-      </div>
-    </div>`;
-  updateDateChip();
-  isLibraryPreview=true;
-  const shutterBtn=document.getElementById('shutter-btn');
-  if(shutterBtn)shutterBtn.innerHTML='<div class="shutter-inner" style="display:flex;align-items:center;justify-content:center;font-size:26px;color:#000">✓</div>';
-  const flipBtn=document.getElementById('flip-btn');
-  if(flipBtn)flipBtn.style.visibility='hidden';
-}
-
-function cancelLibraryPreview(){
-  isLibraryPreview=false;
-  resetMoneyRow();
-  const shutterBtn=document.getElementById('shutter-btn');
-  if(shutterBtn)shutterBtn.innerHTML='<div class="shutter-inner"></div>';
-  const flipBtn=document.getElementById('flip-btn');
-  if(flipBtn)flipBtn.style.visibility='';
-  startCamera();
-}
-
-let isLibraryPreview=false;
 function capturePhoto(){
   const video=document.getElementById('video');
   if(!video){showToast('Chưa bật camera');return;}
-  const isImg=video.tagName==='IMG';
-  if(isImg&&!video.complete){showToast('Ảnh chưa tải xong, thử lại');return;}
   const flash=document.getElementById('flash');
   flash.style.opacity='1';
   setTimeout(()=>flash.style.opacity='0',150);
   const canvas=document.createElement('canvas');
-  const srcW=isImg?video.naturalWidth:video.videoWidth;
-  const srcH=isImg?video.naturalHeight:video.videoHeight;
-  if(!srcW||!srcH){showToast(isImg?'Ảnh chưa sẵn sàng':'Camera chưa sẵn sàng');return;}
+  const size=Math.min(video.videoWidth,video.videoHeight);
+  if(!size){showToast('Camera chưa sẵn sàng');return;}
+  canvas.width=size;canvas.height=size;
   const ctx=canvas.getContext('2d');
-  if(isImg){
-    // Ảnh chọn từ thư viện: giữ nguyên kích thước/tỉ lệ gốc, không crop vuông.
-    canvas.width=srcW;canvas.height=srcH;
-    ctx.drawImage(video,0,0,srcW,srcH,0,0,srcW,srcH);
-  }else{
-    // Ảnh chụp trực tiếp từ camera: giữ crop vuông như cũ.
-    const size=Math.min(srcW,srcH);
-    canvas.width=size;canvas.height=size;
-    if(facingMode==='user'){ctx.translate(size,0);ctx.scale(-1,1);}
-    const xOff=(srcW-size)/2;
-    const yOff=(srcH-size)/2;
-    ctx.drawImage(video,xOff,yOff,size,size,0,0,size,size);
-  }
+  if(facingMode==='user'){ctx.translate(size,0);ctx.scale(-1,1);}
+  const xOff=(video.videoWidth-size)/2;
+  const yOff=(video.videoHeight-size)/2;
+  ctx.drawImage(video,xOff,yOff,size,size,0,0,size,size);
   const dataUrl=sizeDataUrlForFirestore(canvas);
   const captionEl=document.getElementById('caption-input');
   const caption=captionEl?captionEl.value.trim():'';
@@ -1438,10 +1196,6 @@ function capturePhoto(){
   if(document.getElementById('s-gallery').classList.contains('active'))renderGallery();
   showToast(amount>0?`Đã lưu! 📸 ${finalMoneyType==='expense'?'-':'+'}${formatVND(amount)}`:'Đã lưu! 📸');
   uploadPhotoToCloud(photo);
-  if(isImg){
-    isLibraryPreview=false;
-    startCamera();
-  }
 }
 
 async function uploadPhotoToCloud(photo){
@@ -1471,7 +1225,7 @@ function updateThumbPreview(){
   p.innerHTML=photos.length>0?`<img src="${photos[0].dataUrl}" alt="">`:'<span>📁</span>';
 }
 
-let galleryViewMode='month',amountsHidden=false,incomeCardHidden=true,selectedDayStr=null;
+let galleryViewMode='month',amountsHidden=true,selectedDayStr=null;
 function greetingParts(){
   const h=new Date().getHours();
   if(h<11)return['Chào buổi sáng','🌤️'];
@@ -1483,18 +1237,9 @@ function setGalleryView(mode){galleryViewMode=mode;renderGallery();}
 function toggleAmountsHidden(){
   amountsHidden=!amountsHidden;
   renderGallery();
-  if(document.getElementById('s-stats').classList.contains('active'))renderStats();
-  if(document.getElementById('s-settings').classList.contains('active'))renderSettingsUI();
-  if(document.getElementById('analysis-modal').classList.contains('open'))renderAnalysis();
-}
-function toggleIncomeCardHidden(){
-  incomeCardHidden=!incomeCardHidden;
-  renderGallery();
-  if(document.getElementById('s-stats').classList.contains('active'))renderStats();
-  if(document.getElementById('analysis-modal').classList.contains('open'))renderAnalysis();
+  if(document.getElementById('settings-modal').classList.contains('open'))renderSettingsUI();
 }
 function maskAmount(str){return amountsHidden?'••••••':str;}
-function maskIncomeCard(str){return incomeCardHidden?'••••••':str;}
 
 function renderGallery(){
   const el=document.getElementById('s-gallery');
@@ -1517,7 +1262,9 @@ function renderGallery(){
       <div class="gh-greet">${greet} ${emoji}</div>
       <div class="gh-name">${getDisplayName()||(currentUser&&currentUser.displayName)||'Đặt tên trong Cài đặt'}</div>
     </div>
-    <div class="gh-pill ${todayExpense>0?'warn':'good'}" style="flex-shrink:0">${todayExpense>0?`🧾 Hôm nay đã chi ${formatVND(todayExpense)}`:'🌿 Hôm nay chưa chi tiêu'}</div>
+  </div>
+  <div class="gh-status-row">
+    <div class="gh-pill ${todayExpense>0?'warn':'good'}">${todayExpense>0?`🧾 Hôm nay đã chi ${formatVND(todayExpense)}`:'🌿 Hôm nay chưa chi tiêu'}</div>
   </div>
   <div class="gh-toggle-row">
     <div class="gh-toggle-group">
@@ -1527,10 +1274,11 @@ function renderGallery(){
       </div>
       ${galleryViewMode==='month'?`<div class="gh-photo-count" onclick="openMonthPhotoList()" style="cursor:pointer">📷 <b>${monthPhotoCount}</b></div>`:''}
     </div>
+    <button class="gh-icon-btn" onclick="toggleAmountsHidden()">${amountsHidden?'🙈':'👁️'}</button>
   </div>
   <div class="gh-summary-row">
-    <div class="gh-summary-card expense"><div class="gh-summary-icon expense">↗</div><div class="gh-summary-body"><div class="gh-summary-label">Chi</div><div class="gh-summary-val">${maskAmount('-'+formatVND(monthExpense))}</div></div><button class="gh-summary-eye" onclick="toggleAmountsHidden()">${amountsHidden?'🙈':'👁️'}</button></div>
-    <div class="gh-summary-card income"><div class="gh-summary-icon income">↙</div><div class="gh-summary-body"><div class="gh-summary-label">Thu</div><div class="gh-summary-val">${maskIncomeCard('+'+formatVND(monthIncome))}</div></div><button class="gh-summary-eye" onclick="toggleIncomeCardHidden()">${incomeCardHidden?'🙈':'👁️'}</button></div>
+    <div class="gh-summary-card expense"><div class="gh-summary-icon expense">↗</div><div class="gh-summary-body"><div class="gh-summary-label">Chi</div><div class="gh-summary-val">${maskAmount('-'+formatVND(monthExpense))}</div></div></div>
+    <div class="gh-summary-card income"><div class="gh-summary-icon income">↙</div><div class="gh-summary-body"><div class="gh-summary-label">Thu</div><div class="gh-summary-val">${maskAmount('+'+formatVND(monthIncome))}</div></div></div>
   </div>`;
 
   if(galleryViewMode==='month'){
@@ -1559,7 +1307,7 @@ function renderDayListHtml(){
   const dayIncome=dayPhotos.filter(p=>p.moneyType==='income').reduce((s,p)=>s+(p.amount||0),0);
   const net=dayIncome-dayExpense;
   const totalPillCls=net<0?'expense':net>0?'income':'mixed';
-  const totalPillTxt=(dayExpense>0||dayIncome>0)?maskAmount((net>0?'+':'')+formatVND(Math.abs(net))):'0đ';
+  const totalPillTxt=(dayExpense>0||dayIncome>0)?maskAmount((net>0?'+':'')+formatVND(Math.abs(net)))+'đ':'0đ';
   let nav=`<div class="day-nav">
     <button class="day-nav-arrow" onclick="changeSelectedDay(-1)">‹</button>
     <div class="day-nav-mid" onclick="openDayPicker()">
@@ -1643,7 +1391,7 @@ function renderMonthCalendarHtml(year,month){
           ${badgeHtml}
         </div>`;
       }else{
-        inner=`<div class="cal-day-thumb-stack"><div class="stack-photo solo"><img src="${dayPhotos[0].dataUrl}" alt="" loading="lazy"></div></div>`;
+        inner=`<div class="cal-day-thumb-wrap"><img src="${dayPhotos[0].dataUrl}" alt="" loading="lazy"></div>`;
       }
       const dayExpense=dayPhotos.filter(p=>p.moneyType==='expense').reduce((s,p)=>s+(p.amount||0),0);
       const dayIncome=dayPhotos.filter(p=>p.moneyType==='income').reduce((s,p)=>s+(p.amount||0),0);
@@ -1652,11 +1400,8 @@ function renderMonthCalendarHtml(year,month){
         const amtCls=net<0?'expense':net>0?'income':'mixed';
         const amtTxt=maskAmount((net<0?'-':net>0?'+':'')+formatCompactVND(net));
         amountHtml=`<div class="cal-day-amount ${amtCls}">${amtTxt}</div>`;
-      }else{
-        amountHtml=`<div class="cal-day-amount cal-day-amount-empty">&nbsp;</div>`;
       }
     }else{
-      amountHtml=`<div class="cal-day-amount cal-day-amount-empty">&nbsp;</div>`;
       inner=`<div class="cal-day-add" onclick="event.stopPropagation();openManualEntry(null,'${dateStr}')">+</div>`;
     }
     const clickAttr=hasPhoto?` onclick="calDayClick('${dateStr}')"`:'';
@@ -1838,22 +1583,11 @@ function deletePhoto(){
   if(!currentViewerId)return;
   if(!confirm('Xoá ảnh này?'))return;
   const id=currentViewerId;
-  const finishLocalDelete=()=>{
-    photos=photos.filter(p=>p.id!==id);
-    closeViewer();renderGallery();updateThumbPreview();
-    showToast('Đã xoá');
-  };
+  photos=photos.filter(p=>p.id!==id);
+  closeViewer();renderGallery();updateThumbPreview();
+  showToast('Đã xoá');
   if(currentUser&&db){
-    // Xoá trên cloud trước, chỉ xoá khỏi giao diện khi chắc chắn thành công.
-    // Trước đây xoá khỏi mảng `photos` ngay lập tức rồi mới gọi Firestore —
-    // nếu lệnh xoá cloud thất bại (vd. thiếu quyền), listener onSnapshot sẽ
-    // đồng bộ lại và ảnh bị "hồi sinh", trông như nút xoá không hoạt động.
-    db.collection('photos').doc(id).delete().then(finishLocalDelete).catch(e=>{
-      console.error(e);
-      showToast('Lỗi xoá trên cloud: '+(e.code||e.message||'không rõ'));
-    });
-  }else{
-    finishLocalDelete();
+    db.collection('photos').doc(id).delete().catch(e=>{console.error(e);showToast('Lỗi xoá trên cloud');});
   }
 }
 
@@ -1928,14 +1662,14 @@ function openDaySummary(dateStr){
   const totalEl=document.getElementById('ds-total');
   if(dayExpense>0&&dayIncome===0){
     totalEl.className='ds-total expense';
-    totalEl.textContent=`↗ ${maskAmount(formatVND(dayExpense))}đ`;
+    totalEl.textContent=`↗ ${maskAmount(formatVND(dayExpense))}`;
   }else if(dayIncome>0&&dayExpense===0){
     totalEl.className='ds-total income';
-    totalEl.textContent=`↙ ${maskAmount(formatVND(dayIncome))}đ`;
+    totalEl.textContent=`↙ ${maskAmount(formatVND(dayIncome))}`;
   }else if(dayExpense>0||dayIncome>0){
     const net=dayIncome-dayExpense;
     totalEl.className=`ds-total ${net<0?'expense':net>0?'income':'mixed'}`;
-    totalEl.textContent=`${net<0?'↗':'↙'} ${maskAmount(formatVND(Math.abs(net)))}đ`;
+    totalEl.textContent=`${net<0?'↗':'↙'} ${maskAmount(formatVND(Math.abs(net)))}`;
   }else{
     totalEl.className='ds-total mixed';
     totalEl.textContent='0đ';
@@ -1951,7 +1685,7 @@ function openDaySummary(dateStr){
     return`<div class="ds-card" onclick="closeDaySummary();openViewer('${p.id}')">
       ${imgSrc?`<img src="${imgSrc}" alt="" loading="lazy">`:''}
       <div class="ds-card-pill" style="background:${catColor}">${catLabel}</div>
-      <div class="ds-card-amount">${maskAmount(sign+formatVND(p.amount||0))}đ</div>
+      <div class="ds-card-amount">${maskAmount(sign+formatVND(p.amount||0))}</div>
     </div>`;
   }).join('');
 
@@ -2005,392 +1739,51 @@ function closeMonthPhotoList(){
 }
 
 
-function openSettings(){switchTab('settings');}
-function closeSettings(){}
-
-/* ====== REMINDER SETTINGS ====== */
-const REMINDER_KEY='th_reminder_cfg';
-function loadReminderCfg(){
-  try{return JSON.parse(localStorage.getItem(REMINDER_KEY))||{};}catch(e){return{};}
-}
-function saveReminderCfg(cfg){try{localStorage.setItem(REMINDER_KEY,JSON.stringify(cfg));}catch(e){}}
-function getReminderSummary(){
-  const cfg=loadReminderCfg();
-  if(!cfg.enabled)return'Đang tắt';
-  return`Bật · ${cfg.time||'20:00'} mỗi ngày`;
-}
-function openReminderSettings(){
-  document.getElementById('reminder-modal').classList.add('open');
-  renderReminderUI();
-}
-function closeReminderSettings(){
-  document.getElementById('reminder-modal').classList.remove('open');
-  renderSettingsUI();
-}
-function renderReminderUI(){
-  const cfg=loadReminderCfg();
-  const enabled=!!cfg.enabled;
-  const time=cfg.time||'20:00';
-  const taskReminders=cfg.taskReminders||{};
-  const hasPerm='Notification' in window;
-  const perm=hasPerm?Notification.permission:'denied';
-  const taskRows=tasks.map(t=>{
-    const on=taskReminders[t.id]!==false;
-    return`<div class="reminder-task-row">
-      <span class="reminder-task-name">${t.text.replace(/</g,'&lt;')}</span>
-      <button class="toggle-switch${on?' on':''}" onclick="toggleReminderTask('${t.id}')" id="rtr-${t.id}"></button>
-    </div>`;
-  }).join('')||'<div class="reminder-note">Chưa có nhiệm vụ nào</div>';
-  document.getElementById('reminder-body').innerHTML=`
-    <div class="reminder-toggle-row">
-      <div><div class="reminder-toggle-label">Bật nhắc nhở</div><div class="reminder-toggle-sub">Thông báo hàng ngày nhắc hoàn thành nhiệm vụ</div></div>
-      <button class="toggle-switch${enabled?' on':''}" id="reminder-master-toggle" onclick="toggleReminderMaster()"></button>
-    </div>
-    <div id="reminder-detail" style="${enabled?'':'opacity:0.4;pointer-events:none'}">
-      <div class="reminder-time-row">
-        <div class="reminder-time-label">⏰ Giờ nhắc</div>
-        <input type="time" class="reminder-time-input" id="reminder-time-input" value="${time}">
-      </div>
-      <div class="reminder-section-title">Nhắc cho nhiệm vụ</div>
-      <div class="reminder-task-list">${taskRows}</div>
-    </div>
-    ${perm==='denied'?`<div class="reminder-note">⚠️ Trình duyệt đang chặn thông báo. Vào cài đặt trình duyệt để cấp quyền.</div>`:''}
-    ${!hasPerm?`<div class="reminder-note">Trình duyệt này không hỗ trợ thông báo.</div>`:''}
-    <button class="reminder-save-btn" onclick="saveReminderSettings()">Lưu cài đặt</button>
-    <div class="reminder-note">Nhắc nhở chỉ hoạt động khi trang web đang mở hoặc PWA đang chạy nền.</div>
-  `;
-}
-function toggleReminderMaster(){
-  const cfg=loadReminderCfg();
-  cfg.enabled=!cfg.enabled;
-  saveReminderCfg(cfg);
-  renderReminderUI();
-}
-function toggleReminderTask(id){
-  const cfg=loadReminderCfg();
-  if(!cfg.taskReminders)cfg.taskReminders={};
-  cfg.taskReminders[id]=cfg.taskReminders[id]===false?true:false;
-  saveReminderCfg(cfg);
-  const btn=document.getElementById('rtr-'+id);
-  if(btn)btn.classList.toggle('on',cfg.taskReminders[id]!==false);
-}
-function saveReminderSettings(){
-  const cfg=loadReminderCfg();
-  const timeInp=document.getElementById('reminder-time-input');
-  if(timeInp)cfg.time=timeInp.value||'20:00';
-  saveReminderCfg(cfg);
-  if(cfg.enabled&&'Notification' in window&&Notification.permission==='default'){
-    Notification.requestPermission().then(p=>{
-      if(p==='granted'){showToast('✅ Đã bật nhắc nhở lúc '+cfg.time);scheduleReminders();}
-      else showToast('⚠️ Cần cấp quyền thông báo để nhắc nhở hoạt động');
-    });
-  }else{
-    if(cfg.enabled)scheduleReminders();
-    else clearReminderTimer();
-    showToast(cfg.enabled?'✅ Đã lưu · Nhắc lúc '+cfg.time:'🔕 Đã tắt nhắc nhở');
-  }
-  closeReminderSettings();
-}
-let reminderTimer=null;
-function clearReminderTimer(){if(reminderTimer){clearTimeout(reminderTimer);reminderTimer=null;}}
-function scheduleReminders(){
-  clearReminderTimer();
-  const cfg=loadReminderCfg();
-  if(!cfg.enabled)return;
-  if(!('Notification' in window)||Notification.permission!=='granted')return;
-  const [h,m]=(cfg.time||'20:00').split(':').map(Number);
-  const now=new Date();
-  const next=new Date(now);
-  next.setHours(h,m,0,0);
-  if(next<=now)next.setDate(next.getDate()+1);
-  const ms=next-now;
-  reminderTimer=setTimeout(()=>{
-    fireReminderNotification();
-    scheduleReminders();
-  },ms);
-}
-function fireReminderNotification(){
-  const cfg=loadReminderCfg();
-  if(!cfg.enabled)return;
-  const today=toDateStr(new Date());
-  const taskReminders=cfg.taskReminders||{};
-  const pending=tasks.filter(t=>{
-    if(t.endDate&&today>t.endDate)return false;
-    if(t.startDate&&today<t.startDate)return false;
-    if(taskReminders[t.id]===false)return false;
-    return!t.doneDates.includes(today);
-  });
-  if(!pending.length)return;
-  const body=pending.length===1
-    ?`"${pending[0].text}" chưa hoàn thành hôm nay!`
-    :`${pending.length} nhiệm vụ chưa hoàn thành: ${pending.map(t=>t.text).join(', ')}`;
-  try{new Notification('🔥 Nhắc nhiệm vụ hôm nay',{body,icon:'icon-192.png',badge:'icon-192.png'});}catch(e){}
-}
-/* ===== APP LOCK ===== */
-const APPLOCK_KEY='th_applock_cfg';
-function loadAppLockCfg(){
-  try{return JSON.parse(localStorage.getItem(APPLOCK_KEY))||{};}catch(e){return{};}
-}
-function saveAppLockCfg(cfg){try{localStorage.setItem(APPLOCK_KEY,JSON.stringify(cfg));}catch(e){}}
-function getAppLockSummary(){
-  const cfg=loadAppLockCfg();
-  if(!cfg.enabled)return'Đang tắt';
-  return cfg.method==='biometric'?'Bật · Sinh trắc học (Face/Touch ID)':'Bật · Mật khẩu';
-}
-async function sha256Hex(text){
-  const enc=new TextEncoder().encode(text);
-  const buf=await crypto.subtle.digest('SHA-256',enc);
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-function hasWebAuthn(){
-  return!!(window.PublicKeyCredential&&navigator.credentials&&navigator.credentials.create);
-}
-function b64uToBuf(s){
-  s=s.replace(/-/g,'+').replace(/_/g,'/');
-  while(s.length%4)s+='=';
-  const bin=atob(s);
-  const buf=new Uint8Array(bin.length);
-  for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
-  return buf;
-}
-function bufToB64u(buf){
-  let bin='';
-  new Uint8Array(buf).forEach(b=>bin+=String.fromCharCode(b));
-  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-}
-async function registerBiometric(){
-  if(!hasWebAuthn()){showToast('Thiết bị/trình duyệt này không hỗ trợ sinh trắc học');return false;}
-  try{
-    const challenge=crypto.getRandomValues(new Uint8Array(32));
-    const userId=crypto.getRandomValues(new Uint8Array(16));
-    const cred=await navigator.credentials.create({publicKey:{
-      challenge,
-      rp:{name:'T&H Spending'},
-      user:{id:userId,name:(currentUser&&currentUser.email)||'user',displayName:getDisplayName()||'Người dùng'},
-      pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
-      authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'},
-      timeout:60000
-    }});
-    if(!cred)return false;
-    const cfg=loadAppLockCfg();
-    cfg.credId=bufToB64u(cred.rawId);
-    saveAppLockCfg(cfg);
-    return true;
-  }catch(e){console.error(e);showToast('Không thể đăng ký sinh trắc học: '+(e.message||e));return false;}
-}
-async function verifyBiometric(){
-  const cfg=loadAppLockCfg();
-  if(!cfg.credId){showToast('Chưa đăng ký sinh trắc học');return false;}
-  if(!hasWebAuthn())return false;
-  try{
-    const challenge=crypto.getRandomValues(new Uint8Array(32));
-    const assertion=await navigator.credentials.get({publicKey:{
-      challenge,
-      allowCredentials:[{id:b64uToBuf(cfg.credId),type:'public-key'}],
-      userVerification:'required',
-      timeout:60000
-    }});
-    return!!assertion;
-  }catch(e){console.error(e);return false;}
-}
-let appLockUnlocked=false,appLockSetupMethod='password';
-function isAppLockEnabled(){return!!loadAppLockCfg().enabled;}
-function showAppLockScreen(){
-  if(!isAppLockEnabled()||appLockUnlocked){return;}
-  document.getElementById('applock-screen').classList.add('open');
-  renderAppLockScreenBody();
-}
-function hideAppLockScreen(){
-  appLockUnlocked=true;
-  document.getElementById('applock-screen').classList.remove('open');
-}
-function renderAppLockScreenBody(){
-  const cfg=loadAppLockCfg();
-  const body=document.getElementById('applock-body');
-  const sub=document.getElementById('applock-sub');
-  if(cfg.method==='biometric'){
-    sub.textContent='Chạm để xác thực bằng khuôn mặt / vân tay';
-    body.innerHTML=`
-      <button class="applock-bio-btn" onclick="attemptBiometricUnlock()">🙂</button>
-      <div class="applock-err" id="applock-err"></div>
-      <button class="applock-btn" style="margin-top:14px;background:var(--surface2);color:var(--text)" onclick="attemptBiometricUnlock()">Mở khóa</button>
-    `;
-    attemptBiometricUnlock(true);
-  }else{
-    sub.textContent='Nhập mật khẩu để tiếp tục';
-    body.innerHTML=`
-      <input type="password" inputmode="numeric" class="applock-pwd-input" id="applock-pwd-input" placeholder="••••" maxlength="20" autofocus>
-      <div class="applock-err" id="applock-err"></div>
-      <button class="applock-btn" style="margin-top:14px" onclick="attemptPasswordUnlock()">Mở khóa</button>
-    `;
-    const inp=document.getElementById('applock-pwd-input');
-    if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter')attemptPasswordUnlock();});
-  }
-}
-async function attemptPasswordUnlock(){
-  const inp=document.getElementById('applock-pwd-input');
-  const err=document.getElementById('applock-err');
-  const cfg=loadAppLockCfg();
-  const hash=await sha256Hex(inp.value||'');
-  if(hash===cfg.pwdHash){
-    if(err)err.textContent='';
-    hideAppLockScreen();
-  }else{
-    if(err)err.textContent='Sai mật khẩu, thử lại';
-    if(inp){inp.value='';inp.focus();}
-  }
-}
-async function attemptBiometricUnlock(silent){
-  const err=document.getElementById('applock-err');
-  const ok=await verifyBiometric();
-  if(ok){hideAppLockScreen();}
-  else if(err&&!silent)err.textContent='Xác thực thất bại, thử lại';
-}
-function openAppLockSettings(){
-  const cfg=loadAppLockCfg();
-  appLockSetupMethod=cfg.method||'password';
-  document.getElementById('applock-modal').classList.add('open');
-  renderAppLockSettingsUI();
-}
-function closeAppLockSettings(){
-  document.getElementById('applock-modal').classList.remove('open');
-  renderSettingsUI();
-}
-function pickAppLockMethod(m){appLockSetupMethod=m;renderAppLockSettingsUI();}
-function renderAppLockSettingsUI(){
-  const cfg=loadAppLockCfg();
-  const enabled=!!cfg.enabled;
-  const bioSupported=hasWebAuthn();
-  document.getElementById('applock-settings-body').innerHTML=`
-    <div class="reminder-toggle-row">
-      <div><div class="reminder-toggle-label">Bật khóa ứng dụng</div><div class="reminder-toggle-sub">Yêu cầu xác thực mỗi khi mở app</div></div>
-      <button class="toggle-switch${enabled?' on':''}" onclick="toggleAppLockMaster()"></button>
-    </div>
-    <div id="applock-detail" style="${enabled?'':'opacity:0.4;pointer-events:none'}">
-      <div class="reminder-section-title">Phương thức xác thực</div>
-      <div class="applock-method-row">
-        <button class="applock-method-btn${appLockSetupMethod==='password'?' active':''}" onclick="pickAppLockMethod('password')"><div class="applock-method-icon">🔢</div>Mật khẩu</button>
-        <button class="applock-method-btn${appLockSetupMethod==='biometric'?' active':''}" onclick="pickAppLockMethod('biometric')"><div class="applock-method-icon">🆔</div>Sinh trắc học</button>
-      </div>
-      ${appLockSetupMethod==='password'?`
-        <div class="reminder-section-title">Đặt mật khẩu</div>
-        <input type="password" inputmode="numeric" class="applock-pwd-input" id="applock-set-pwd1" placeholder="Mật khẩu mới" maxlength="20" style="margin-bottom:8px">
-        <input type="password" inputmode="numeric" class="applock-pwd-input" id="applock-set-pwd2" placeholder="Nhập lại mật khẩu" maxlength="20">
-        <div class="applock-err" id="applock-set-err"></div>
-        <button class="reminder-save-btn" onclick="saveAppLockPassword()">Lưu mật khẩu</button>
-        <div class="reminder-note">${cfg.pwdHash?'Đã đặt mật khẩu. Nhập mật khẩu mới ở trên để đổi.':'Chưa đặt mật khẩu.'}</div>
-      `:`
-        <div class="reminder-section-title">Sinh trắc học (Face ID / Touch ID / Vân tay)</div>
-        ${!bioSupported?'<div class="reminder-note">⚠️ Thiết bị hoặc trình duyệt này không hỗ trợ sinh trắc học. Hãy dùng mật khẩu thay thế.</div>':`
-        <button class="reminder-save-btn" onclick="saveAppLockBiometric()">${cfg.credId&&cfg.method==='biometric'?'Đăng ký lại':'Đăng ký khuôn mặt / vân tay'}</button>
-        <div class="reminder-note">${cfg.credId&&cfg.method==='biometric'?'✅ Đã đăng ký trên thiết bị này.':'Sẽ dùng khóa sinh trắc học có sẵn của thiết bị (Face ID, Touch ID, vân tay Android...).'}</div>
-        `}
-      `}
-    </div>
-    <div class="reminder-note">Khóa chỉ áp dụng trên thiết bị này, không đồng bộ qua tài khoản.</div>
-  `;
-}
-function toggleAppLockMaster(){
-  const cfg=loadAppLockCfg();
-  cfg.enabled=!cfg.enabled;
-  if(cfg.enabled&&!cfg.method)cfg.method=appLockSetupMethod;
-  saveAppLockCfg(cfg);
-  renderAppLockSettingsUI();
-}
-async function saveAppLockPassword(){
-  const p1=document.getElementById('applock-set-pwd1').value||'';
-  const p2=document.getElementById('applock-set-pwd2').value||'';
-  const err=document.getElementById('applock-set-err');
-  if(p1.length<4){err.textContent='Mật khẩu cần ít nhất 4 ký tự';return;}
-  if(p1!==p2){err.textContent='Hai mật khẩu không khớp';return;}
-  err.textContent='';
-  const cfg=loadAppLockCfg();
-  cfg.pwdHash=await sha256Hex(p1);
-  cfg.method='password';
-  cfg.enabled=true;
-  saveAppLockCfg(cfg);
-  showToast('✅ Đã đặt mật khẩu khóa ứng dụng');
-  renderAppLockSettingsUI();
-}
-async function saveAppLockBiometric(){
-  const ok=await registerBiometric();
-  if(ok){
-    const cfg=loadAppLockCfg();
-    cfg.method='biometric';
-    cfg.enabled=true;
-    saveAppLockCfg(cfg);
-    showToast('✅ Đã đăng ký sinh trắc học');
-    renderAppLockSettingsUI();
-  }
-}
-document.addEventListener('visibilitychange',()=>{
-  if(document.hidden&&isAppLockEnabled())appLockUnlocked=false;
-  else if(!document.hidden)showAppLockScreen();
-});
-
+function openSettings(){document.getElementById('settings-modal').classList.add('open');renderSettingsUI();}
+function closeSettings(){document.getElementById('settings-modal').classList.remove('open');}
 function renderSettingsUI(){
-  const el=document.getElementById('s-settings');
-  if(!el)return;
-  const current=getTheme();
-  const userName=currentUser?(currentUser.displayName||''):'';
-  const userEmail=currentUser?(currentUser.email||''):'';
-  const userPhoto=currentUser&&currentUser.photoURL?`<img src="${currentUser.photoURL}" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0">`:'<div style="width:48px;height:48px;border-radius:50%;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">👤</div>';
-  const currentThemeInfo=THEMES[current];
-  el.innerHTML=`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px">
-      <div class="fr-section-title" style="margin:0">Tài khoản</div>
-      <button onclick="exportPhotos()" title="Xuất dữ liệu" style="width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0">💾</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:16px;padding:14px 16px;margin-bottom:10px">
-      ${userPhoto}
-      <div style="flex:1;min-width:0">
-        <div style="font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${userName||'Chưa đăng nhập'}</div>
-        <div style="font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${userEmail}</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;background:var(--surface);border-radius:16px;padding:10px 14px;margin-bottom:4px;align-items:center">
-      <input type="text" id="settings-name-input" placeholder="Tên hiển thị của bạn" maxlength="30" value="${getDisplayName()}" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13.5px;color:var(--text);font-family:inherit;outline:none">
-      <button onclick="saveDisplayNameFromInput()" style="flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Lưu</button>
-    </div>
-
-    <div class="fr-section-title" style="margin-top:16px">Chức năng</div>
-    <div class="fab-sheet-list" style="background:var(--surface);border-radius:16px;overflow:hidden;padding:0">
-      <div class="fab-sheet-item" onclick="openReminderSettings()"><div class="fab-sheet-icon" style="background:rgba(251,191,36,0.15);color:#f59e0b">🔔</div><div><strong>Nhắc nhở nhiệm vụ</strong><span>${getReminderSummary()}</span></div></div>
-      <div class="fab-sheet-item" onclick="openAppLockSettings()"><div class="fab-sheet-icon" style="background:rgba(99,102,241,0.15);color:#6366f1">🔐</div><div><strong>Khóa ứng dụng</strong><span>${getAppLockSummary()}</span></div></div>
-    </div>
-
-    <div class="fr-section-title" style="margin-top:16px">Giao diện</div>
-    <div class="fab-sheet-list" style="background:var(--surface);border-radius:16px;overflow:hidden;padding:0">
-      <div class="fab-sheet-item" onclick="openThemeSettings()"><div class="fab-sheet-icon" style="background:linear-gradient(135deg,${currentThemeInfo.swatch[1]},${currentThemeInfo.swatch[2]})">${currentThemeInfo.icon}</div><div><strong>Chủ đề giao diện</strong><span>${currentThemeInfo.label}</span></div></div>
-    </div>
-
-    <div style="margin-top:20px">
-      <button onclick="signOutUser()" style="width:100%;padding:13px;border-radius:14px;background:rgba(239,68,68,0.12);color:#ef4444;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">Đăng xuất</button>
-    </div>
-  `;
+  const meEl=document.getElementById('settings-me');
+  if(meEl){
+    if(currentUser){
+      meEl.innerHTML=`${currentUser.photoURL?`<img src="${currentUser.photoURL}" alt="">`:''}<div class="fr-me-info"><strong>${currentUser.displayName||''}</strong>${currentUser.email||''}</div>`;
+    }else{
+      meEl.innerHTML='<div class="fr-me-info"><strong>Chưa đăng nhập</strong></div>';
+    }
+  }
+  const input=document.getElementById('settings-name-input');
+  if(input&&document.activeElement!==input)input.value=getDisplayName();
+  const listEl=document.getElementById('settings-list');
+  if(listEl){
+    const current=getTheme();
+    listEl.innerHTML=`
+      <div class="fab-sheet-item" onclick="closeSettings();exportPhotos()"><div class="fab-sheet-icon" style="background:var(--accent-dim);color:var(--accent)">💾</div><div><strong>Xuất dữ liệu</strong><span>Tải ảnh &amp; giao dịch của bạn về máy (JSON)</span></div></div>
+      <div class="fab-sheet-item" onclick="toggleAmountsHidden()"><div class="fab-sheet-icon" style="background:var(--surface2);color:var(--text)">${amountsHidden?'🙈':'👁️'}</div><div><strong>${amountsHidden?'Hiện số tiền':'Ẩn số tiền'}</strong><span>Áp dụng cho Nhật ký, Thống kê, Phân tích</span></div></div>
+    `;
+    const themeEl=document.getElementById('settings-theme-list');
+    if(themeEl){
+      themeEl.innerHTML=Object.keys(THEMES).map(id=>{
+        const th=THEMES[id];
+        return`<button class="theme-swatch-btn${id===current?' active':''}" onclick="setTheme('${id}')" title="${th.desc}">
+          <div class="theme-swatch-circle" style="background:linear-gradient(135deg,${th.swatch[1]},${th.swatch[2]})">${id===current?'<span class="theme-swatch-check">✓</span>':''}</div>
+          <div class="theme-swatch-label">${th.icon} ${th.label}</div>
+        </button>`;
+      }).join('');
+    }
+  }
 }
 
-function openSettings(){switchTab('settings');}
-function closeSettings(){}
-
-function switchTab(tab,skipAutoStart){
+function switchTab(tab){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('s-'+tab).classList.add('active');
   document.getElementById('nav-gallery')?.classList.toggle('active',tab==='gallery');
   document.getElementById('navl-gallery')?.classList.toggle('active',tab==='gallery');
   document.getElementById('nav-stats')?.classList.toggle('active',tab==='stats');
   document.getElementById('navl-stats')?.classList.toggle('active',tab==='stats');
-  document.getElementById('nav-tasks')?.classList.toggle('active',tab==='tasks');
-  document.getElementById('navl-tasks')?.classList.toggle('active',tab==='tasks');
-  document.getElementById('nav-settings')?.classList.toggle('active',tab==='settings');
-  document.getElementById('navl-settings')?.classList.toggle('active',tab==='settings');
   const fab=document.getElementById('fab-add');
   if(fab)fab.style.display=tab==='gallery'?'flex':'none';
-  if(tab==='camera'){if(!stream&&!skipAutoStart)startCamera();}
+  if(tab==='camera'){if(!stream)startCamera();}
   else if(tab==='gallery')renderGallery();
   else if(tab==='stats')renderStats();
-  else if(tab==='tasks')renderTasksScreen();
-  else if(tab==='settings')renderSettingsUI();
 }
 function openFabSheet(){document.getElementById('fab-sheet-modal').classList.add('open');}
 function closeFabSheet(){document.getElementById('fab-sheet-modal').classList.remove('open');}
@@ -2399,7 +1792,7 @@ function closeFabSheet(){document.getElementById('fab-sheet-modal').classList.re
 let statsMonthOffset=0;
 let statsFilterCat='all';
 function changeStatsMonth(delta){statsMonthOffset+=delta;statsFilterCat='all';renderStats();}
-function statsSelectCat(cid){statsFilterCat=(statsFilterCat===cid)?'all':cid;renderStats();}
+function statsSelectCat(cid){statsFilterCat=cid;renderStats();}
 function renderStats(){
   const el=document.getElementById('s-stats');
   if(!el)return;
@@ -2438,20 +1831,20 @@ function renderStats(){
     catRows=Object.keys(byCat).map(cid=>({cid,total:byCat[cid].total,count:byCat[cid].count})).sort((a,b)=>b.total-a.total);
     if(!catRows.find(r=>r.cid===statsFilterCat))statsFilterCat='all';
 
-    html+=`<div class="cat-stats-title-row"><div class="cat-stats-title">Lọc theo danh mục</div><button class="chart-btn" onclick="openAnalysis()">📈 Biểu đồ</button></div>
-    <div class="cat-pills cat-pills-light cat-pills-wrap" style="margin-bottom:6px">
+    html+=`<div class="cat-stats-title">Lọc theo danh mục</div>
+    <div class="cat-pills cat-pills-light" style="margin-bottom:2px">
       <div class="cat-pill${statsFilterCat==='all'?' active':''}" onclick="statsSelectCat('all')">🔎 Tất cả</div>
       ${catRows.map(r=>{const info=getCatInfo('expense',r.cid);return`<div class="cat-pill${statsFilterCat===r.cid?' active':''}" onclick="statsSelectCat('${r.cid}')">${info.icon} ${info.label}</div>`;}).join('')}
     </div>`;
 
     const shownRows=statsFilterCat==='all'?catRows:catRows.filter(r=>r.cid===statsFilterCat);
     const maxVal=catRows[0].total;
-    html+=`<div class="cat-stats-title" style="margin-top:6px">Danh mục</div>`;
+    html+=`<div class="cat-stats-title" style="margin-top:6px">Chi tiêu theo danh mục (bấm để xem chi tiết)</div>`;
     shownRows.forEach(r=>{
       const info=getCatInfo('expense',r.cid);
       const pct=Math.round((r.total/maxVal)*100);
       const share=totalExpense>0?Math.round((r.total/totalExpense)*100):0;
-      html+=`<div class="cat-stat-row${statsFilterCat===r.cid?' active':''}" onclick="statsSelectCat('${r.cid}')">
+      html+=`<div class="cat-stat-row" onclick="openCatDetail('${r.cid}')">
         <div class="cat-stat-icon">${info.icon}</div>
         <div class="cat-stat-body">
           <div class="cat-stat-top"><span class="csn">${info.label} <span style="color:var(--text3);font-weight:400">(${share}% · ${r.count} lần)</span></span><span class="csv">${formatVND(r.total)}</span></div>
@@ -2459,17 +1852,13 @@ function renderStats(){
         </div>
       </div>`;
     });
-    if(statsFilterCat==='all'){
-      html+=`<div class="cd-empty" style="margin-top:10px">👆 Chọn một danh mục để xem chi tiết giao dịch</div>`;
-    }
   }
 
-  if(monthPhotos.length&&statsFilterCat!=='all'){
+  if(monthPhotos.length){
     let allSorted=monthPhotos.filter(p=>p.amount>0).slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
-    allSorted=allSorted.filter(p=>(p.category||'khac')===statsFilterCat);
-    const catLabel=getCatInfo('expense',statsFilterCat).label;
+    if(statsFilterCat!=='all')allSorted=allSorted.filter(p=>(p.category||'khac')===statsFilterCat);
     if(allSorted.length){
-      html+=`<div class="cat-stats-title" style="margin-top:22px">Chi tiết · ${catLabel} (${allSorted.length})</div>
+      html+=`<div class="cat-stats-title" style="margin-top:22px">Chi tiết giao dịch (${allSorted.length})</div>
       <div class="cd-list" style="max-height:none;margin-bottom:10px">${allSorted.map(p=>{
         const info=getCatInfo(p.moneyType,p.category||'khac');
         const d=new Date(p.date+'T00:00:00');
@@ -2485,7 +1874,7 @@ function renderStats(){
         </div>`;
       }).join('')}</div>`;
     }else{
-      html+=`<div class="cat-stats-title" style="margin-top:22px">Chi tiết · ${catLabel} (0)</div>
+      html+=`<div class="cat-stats-title" style="margin-top:22px">Chi tiết giao dịch (0)</div>
       <div class="cd-empty">Không có giao dịch nào trong danh mục này</div>`;
     }
   }
@@ -2501,517 +1890,6 @@ function renderStats(){
 // ====== SPENDING ANALYSIS (biểu đồ) ======
 let analysisMonthOffset=0;
 const AN_COLORS=['#3b82f6','#ef4444','#22c55e','#eab308','#a855f7','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16'];
-// ====== TASKS (Nhiệm vụ - chuỗi ngày) ======
-let tasks=[];
-const TASK_PALETTE=[
-  {done:'#8B9DE0',soft:'#cfd3e8'},
-  {done:'#EE8FBA',soft:'#f4c2d7'},
-  {done:'#6FCF97',soft:'#cdebd9'},
-  {done:'#F2B265',soft:'#f7ddb8'},
-  {done:'#B18AE0',soft:'#ded0f2'},
-  {done:'#5FC9C0',soft:'#c9ece9'},
-  {done:'#EF8C82',soft:'#f8d2cd'},
-  {done:'#D9B93C',soft:'#f0e3ab'},
-  {done:'#7C93E8',soft:'#d2d9f5'},
-  {done:'#A8C24C',soft:'#e3edc0'}
-];
-function taskColorIndex(id){
-  const t=tasks.find(x=>x.id===id);
-  if(t&&typeof t.colorIndex==='number')return((t.colorIndex%TASK_PALETTE.length)+TASK_PALETTE.length)%TASK_PALETTE.length;
-  let idx=tasks.findIndex(x=>x.id===id);
-  if(idx<0)idx=0;
-  return idx%TASK_PALETTE.length;
-}
-function taskColor(id){
-  return TASK_PALETTE[taskColorIndex(id)];
-}
-function tasksStorageKey(){return 'th_tasks_'+(currentUser?currentUser.uid:'guest');}
-function tasksDeletesKey(){return 'th_tasks_pending_deletes_'+(currentUser?currentUser.uid:'guest');}
-function loadTasks(){
-  // localStorage là bộ nhớ đệm — nhưng đồng thời cũng là "outbox" giữ những
-  // nhiệm vụ chưa chắc đã lên tới Firestore (pendingSync=true). Không phụ
-  // thuộc vào enablePersistence/IndexedDB (không đáng tin cậy trên một số
-  // máy, đặc biệt PWA ghim màn hình chính iOS) — localStorage ghi đồng bộ
-  // nên gần như luôn còn nguyên sau khi tắt bật app hoặc F5.
-  try{
-    const raw=localStorage.getItem(tasksStorageKey());
-    tasks=raw?JSON.parse(raw):[];
-    tasks.forEach(t=>{if(!Array.isArray(t.doneDates))t.doneDates=[];});
-  }catch(e){tasks=[];}
-}
-function cacheTasksLocally(){
-  try{localStorage.setItem(tasksStorageKey(),JSON.stringify(tasks));}catch(e){}
-}
-function getPendingDeleteIds(){
-  try{
-    const raw=localStorage.getItem(tasksDeletesKey());
-    const arr=raw?JSON.parse(raw):[];
-    return Array.isArray(arr)?arr:[];
-  }catch(e){return[];}
-}
-function addPendingDeleteId(id){
-  try{
-    const ids=getPendingDeleteIds();
-    if(!ids.includes(id))ids.push(id);
-    localStorage.setItem(tasksDeletesKey(),JSON.stringify(ids));
-  }catch(e){}
-}
-function clearPendingDeleteId(id){
-  try{
-    const ids=getPendingDeleteIds().filter(x=>x!==id);
-    localStorage.setItem(tasksDeletesKey(),JSON.stringify(ids));
-  }catch(e){}
-}
-function saveTasks(changedTask){
-  if(changedTask)changedTask.pendingSync=true;
-  cacheTasksLocally();
-  if(changedTask)uploadTaskToCloud(changedTask);
-}
-async function uploadTaskToCloud(task){
-  if(!currentUser||!db)return;
-  try{
-    await db.collection('tasks').doc(task.id).set({
-      ownerUid:currentUser.uid,
-      text:task.text||'',
-      startDate:task.startDate||null,
-      endDate:task.endDate||null,
-      doneDates:Array.isArray(task.doneDates)?task.doneDates:[],
-      colorIndex:typeof task.colorIndex==='number'?task.colorIndex:null,
-      createdAt:task.createdAt||Date.now(),
-      updatedAt:firebase.firestore.FieldValue.serverTimestamp()
-    });
-    // Ghi thành công lên cloud — bỏ cờ "đang chờ đồng bộ" cho đúng nhiệm vụ
-    // này (tìm lại theo id, vì trong lúc chờ mạng, tasks có thể đã bị thay
-    // bằng dữ liệu gộp mới từ subscribeCloudTasks()).
-    const t=tasks.find(x=>x.id===task.id);
-    if(t){t.pendingSync=false;cacheTasksLocally();}
-  }catch(e){
-    console.error(e);
-    showToast('Lỗi đồng bộ nhiệm vụ ('+(e.code||e.message||'không rõ')+')');
-    // Giữ nguyên pendingSync=true để lần retryPendingTaskSync() kế tiếp
-    // (mở lại app, quay lại foreground, có mạng trở lại...) sẽ thử lại.
-  }
-}
-function deleteTaskFromCloud(id){
-  if(!currentUser||!db)return;
-  db.collection('tasks').doc(id).delete().then(()=>{
-    clearPendingDeleteId(id);
-  }).catch(e=>{
-    console.error(e);
-    showToast('Lỗi xoá nhiệm vụ trên cloud ('+(e.code||e.message||'không rõ')+')');
-    // Giữ id trong danh sách "chờ xoá" để không bị dữ liệu cloud cũ (chưa kịp
-    // xoá) hồi sinh lại nhiệm vụ này khi gộp dữ liệu, và để thử xoá lại sau.
-  });
-}
-function retryPendingTaskSync(){
-  if(!currentUser||!db)return;
-  tasks.filter(t=>t.pendingSync).forEach(t=>uploadTaskToCloud(t));
-  getPendingDeleteIds().forEach(id=>deleteTaskFromCloud(id));
-}
-let tasksUnsub=null;
-function subscribeCloudTasks(){
-  if(tasksUnsub){tasksUnsub();tasksUnsub=null;}
-  if(!currentUser||!db)return;
-  tasksUnsub=db.collection('tasks').where('ownerUid','==',currentUser.uid)
-    .onSnapshot(snap=>{
-      const pendingDeleteIds=getPendingDeleteIds();
-      const cloudTasks=snap.docs.map(d=>{
-        const t=d.data();
-        return{
-          id:d.id,text:t.text||'',startDate:t.startDate||null,endDate:t.endDate||null,
-          doneDates:Array.isArray(t.doneDates)?t.doneDates:[],
-          colorIndex:typeof t.colorIndex==='number'?t.colorIndex:undefined,
-          createdAt:t.createdAt||Date.now(),
-          pendingSync:false
-        };
-      }).filter(t=>!pendingDeleteIds.includes(t.id));
-      // GỘP thay vì ghi đè: dữ liệu cloud là nền, nhưng bất kỳ nhiệm vụ nào
-      // đang pendingSync ở máy này (vừa thêm/sửa, có thể chưa kịp lên cloud
-      // do mất mạng hoặc vừa tắt bật/F5 giữa chừng) luôn được giữ lại —
-      // dùng bản trên máy thay vì bản cloud có thể cũ hơn, và không bao giờ
-      // bị xoá mất khỏi danh sách chỉ vì cloud chưa thấy nó.
-      const merged=cloudTasks.slice();
-      tasks.forEach(localT=>{
-        if(!localT.pendingSync)return;
-        if(pendingDeleteIds.includes(localT.id))return;
-        const idx=merged.findIndex(x=>x.id===localT.id);
-        if(idx>=0)merged[idx]=localT;
-        else merged.push(localT);
-      });
-      merged.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-      tasks=merged;
-      cacheTasksLocally();
-      if(document.getElementById('s-tasks').classList.contains('active'))renderTasksScreen();
-      retryPendingTaskSync();
-    },e=>{
-      console.error(e);
-      showToast('Lỗi đồng bộ nhiệm vụ ('+(e.code||e.message||'không rõ')+')');
-    });
-}
-function openTasks(){switchTab('tasks');}
-let taskAddOpen=false;
-function openTaskAddForm(){
-  taskAddOpen=true;
-  editingTaskId=null;
-  renderTasksScreen();
-  setTimeout(()=>{const inp=document.getElementById('task-input');if(inp)inp.focus();},50);
-}
-function closeTaskAddForm(){
-  taskAddOpen=false;
-  renderTasksScreen();
-}
-function addTask(){
-  const inp=document.getElementById('task-input');
-  const startInp=document.getElementById('task-start-input');
-  const endInp=document.getElementById('task-end-input');
-  const text=(inp.value||'').trim();
-  if(!text)return;
-  const startDate=startInp&&startInp.value?startInp.value:null;
-  const endDate=endInp&&endInp.value?endInp.value:null;
-  if(startDate&&endDate&&endDate<startDate){showToast('Ngày kết thúc phải sau ngày bắt đầu');return;}
-  const newTask={id:'t'+Date.now()+Math.random().toString(36).slice(2,6),text,startDate,endDate,doneDates:[],createdAt:Date.now(),pendingSync:true};
-  tasks.unshift(newTask);
-  taskAddOpen=false;
-  saveTasks(newTask);
-  renderTasksScreen();
-}
-function toggleTaskToday(id){
-  const t=tasks.find(x=>x.id===id);
-  if(!t)return;
-  const today=toDateStr(new Date());
-  const idx=t.doneDates.indexOf(today);
-  if(idx>=0)t.doneDates.splice(idx,1);
-  else t.doneDates.push(today);
-  saveTasks(t);
-  renderTasksScreen();
-}
-function toggleTaskDate(id,ds){
-  const t=tasks.find(x=>x.id===id);
-  if(!t)return;
-  const idx=t.doneDates.indexOf(ds);
-  if(idx>=0)t.doneDates.splice(idx,1);
-  else t.doneDates.push(ds);
-  saveTasks(t);
-  renderTasksScreen();
-}
-function deleteTask(id){
-  const t=tasks.find(x=>x.id===id);
-  const name=t?t.text.replace(/</g,'&lt;'):'nhiệm vụ này';
-  if(!confirm(`Xoá "${name}"? Toàn bộ chuỗi ngày đã hoàn thành sẽ bị mất.`))return;
-  tasks=tasks.filter(x=>x.id!==id);
-  addPendingDeleteId(id);
-  cacheTasksLocally();
-  deleteTaskFromCloud(id);
-  renderTasksScreen();
-}
-let editingTaskId=null;
-let editingColorIndex=null;
-function openEditTask(id){
-  editingTaskId=id;
-  editingColorIndex=taskColorIndex(id);
-  taskAddOpen=false;
-  renderTasksScreen();
-  setTimeout(()=>{const inp=document.getElementById('edit-text-'+id);if(inp)inp.focus();},50);
-}
-function selectEditColor(idx){
-  const id=editingTaskId;
-  const inp=document.getElementById('edit-text-'+id);
-  const startInp=document.getElementById('edit-start-'+id);
-  const endInp=document.getElementById('edit-end-'+id);
-  const draftText=inp?inp.value:null;
-  const draftStart=startInp?startInp.value:null;
-  const draftEnd=endInp?endInp.value:null;
-  editingColorIndex=idx;
-  renderTasksScreen();
-  const inp2=document.getElementById('edit-text-'+id);
-  if(inp2&&draftText!=null)inp2.value=draftText;
-  const s2=document.getElementById('edit-start-'+id);
-  if(s2&&draftStart!=null)s2.value=draftStart;
-  const e2=document.getElementById('edit-end-'+id);
-  if(e2&&draftEnd!=null)e2.value=draftEnd;
-}
-function cancelEditTask(){
-  editingTaskId=null;
-  editingColorIndex=null;
-  renderTasksScreen();
-}
-function saveEditTask(id){
-  const t=tasks.find(x=>x.id===id);
-  if(!t)return;
-  const textInp=document.getElementById('edit-text-'+id);
-  const startInp=document.getElementById('edit-start-'+id);
-  const endInp=document.getElementById('edit-end-'+id);
-  const text=(textInp&&textInp.value||'').trim();
-  if(!text){showToast('Vui lòng nhập tên nhiệm vụ');return;}
-  const startDate=startInp&&startInp.value?startInp.value:null;
-  const endDate=endInp&&endInp.value?endInp.value:null;
-  if(startDate&&endDate&&endDate<startDate){showToast('Ngày kết thúc phải sau ngày bắt đầu');return;}
-  t.text=text;
-  t.startDate=startDate;
-  t.endDate=endDate;
-  t.colorIndex=editingColorIndex!=null?editingColorIndex:taskColorIndex(id);
-  editingTaskId=null;
-  editingColorIndex=null;
-  saveTasks(t);
-  renderTasksScreen();
-}
-function taskStreak(doneDates){
-  const set=new Set(doneDates);
-  const today=new Date();
-  let cursor=new Date(today);
-  if(!set.has(toDateStr(cursor)))cursor.setDate(cursor.getDate()-1);
-  let streak=0;
-  while(set.has(toDateStr(cursor))){
-    streak++;
-    cursor.setDate(cursor.getDate()-1);
-  }
-  return streak;
-}
-function taskStreakRuns(doneDates){
-  // Trả về danh sách các chuỗi ngày liên tiếp đã hoàn thành, mới nhất trước, kèm độ dài.
-  const sortedDates=[...doneDates].sort();
-  const runs=[];
-  let runStart=null,prev=null;
-  sortedDates.forEach(ds=>{
-    const d=new Date(ds+'T00:00:00');
-    if(prev){
-      const diffDays=Math.round((d-prev)/86400000);
-      if(diffDays===1){
-        // tiếp nối chuỗi hiện tại
-      }else{
-        runs.push({start:runStart,end:prev});
-        runStart=d;
-      }
-    }else{
-      runStart=d;
-    }
-    prev=d;
-  });
-  if(runStart)runs.push({start:runStart,end:prev});
-  return runs.map(r=>({start:r.start,end:r.end,len:Math.round((r.end-r.start)/86400000)+1})).reverse();
-}
-function taskBestStreak(doneDates){
-  const runs=taskStreakRuns(doneDates);
-  return runs.reduce((m,r)=>Math.max(m,r.len),0);
-}
-function addDaysStr(ds,n){const d=new Date(ds+'T00:00:00');d.setDate(d.getDate()+n);return toDateStr(d);}
-function taskDisplayDates(t){
-  const today=toDateStr(new Date());
-  let start,end;
-  if(t.startDate&&t.endDate){start=t.startDate;end=t.endDate;}
-  else if(t.startDate){start=t.startDate;end=t.startDate>today?addDaysStr(t.startDate,6):today;}
-  else if(t.endDate){end=t.endDate<today?t.endDate:today;start=addDaysStr(end,-6);}
-  else{end=today;start=addDaysStr(today,-6);}
-  const dates=[];
-  let cursor=new Date(start+'T00:00:00');
-  const endD=new Date(end+'T00:00:00');
-  while(cursor<=endD){dates.push(toDateStr(cursor));cursor.setDate(cursor.getDate()+1);}
-  // Giới hạn số ngày hiển thị để tránh hàng quá dài, ưu tiên giữ các ngày gần hôm nay nhất.
-  const MAX_DAYS=31;
-  if(dates.length>MAX_DAYS){
-    const todayIdx=dates.indexOf(today);
-    const from=Math.max(0,(todayIdx>=0?todayIdx:dates.length-1)-MAX_DAYS+8);
-    return dates.slice(from,from+MAX_DAYS);
-  }
-  return dates;
-}
-let tasksShowHistory=false;
-function toggleTasksHistory(){
-  tasksShowHistory=!tasksShowHistory;
-  renderTasksScreen();
-}
-function fmtD(d){return`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;}
-function renderTasksScreen(){
-  const el=document.getElementById('s-tasks');
-  if(!el)return;
-  const today=toDateStr(new Date());
-  const dayLabels=['CN','T2','T3','T4','T5','T6','T7'];
-  let html=`<div class="tasks-header-row">
-    ${tasksShowHistory?'<div class="tasks-header-title">🕘 Lịch sử chuỗi</div>':`<div class="gh-toggle">
-      <div class="gh-toggle-btn${tasksViewMode==='list'?' active':''}" onclick="setTasksViewMode('list')">Danh sách</div>
-      <div class="gh-toggle-btn${tasksViewMode==='calendar'?' active':''}" onclick="setTasksViewMode('calendar')">Lịch tháng</div>
-    </div>`}
-    <button class="chart-btn" onclick="toggleTasksHistory()">${tasksShowHistory?'← Quay lại':'🕘 Lịch sử'}</button>
-  </div>`;
-  if(!tasksShowHistory&&tasksViewMode==='list'){
-    if(taskAddOpen){
-      html+=`<div class="task-add-row">
-        <input type="text" id="task-input" placeholder="Thêm nhiệm vụ mới..." maxlength="120" onkeydown="if(event.key==='Enter')addTask()">
-        <button onclick="addTask()">✓</button>
-        <button class="task-add-cancel" onclick="closeTaskAddForm()">✕</button>
-      </div>
-      <div class="task-add-dates">
-        <div class="task-add-date-field"><label>Bắt đầu</label><input type="date" id="task-start-input"></div>
-        <div class="task-add-date-field"><label>Kết thúc</label><input type="date" id="task-end-input"></div>
-      </div>`;
-    }else{
-      html+=`<div class="task-fab-fixed"><button class="task-add-fab" onclick="openTaskAddForm()">+</button></div>`;
-    }
-  }
-  if(tasksViewMode==='calendar'&&!tasksShowHistory){
-    html+=renderTasksCalendarHtml();
-    el.innerHTML=html;
-    return;
-  }
-
-  if(!tasks.length){
-    el.innerHTML=html;
-    return;
-  }
-
-  if(tasksShowHistory){
-    const sortedByBest=[...tasks].sort((a,b)=>taskBestStreak(b.doneDates)-taskBestStreak(a.doneDates));
-    html+=sortedByBest.map(t=>{
-      const runs=taskStreakRuns(t.doneDates);
-      const best=taskBestStreak(t.doneDates);
-      const cur=taskStreak(t.doneDates);
-      const runsHtml=runs.length?runs.map(r=>{
-        const label=r.len>1?`${fmtD(r.start)} → ${fmtD(r.end)}`:fmtD(r.start);
-        return`<div class="task-hist-run"><span class="thr-len">${r.len} ngày</span><span class="thr-range">${label}</span></div>`;
-      }).join(''):'<div class="task-empty" style="padding:14px 0">Chưa có chuỗi ngày nào được hoàn thành</div>';
-      const col=taskColor(t.id);
-      return`<div class="task-item" style="--tc:${col.done};--tc-soft:${col.soft}">
-        <div class="task-main" style="margin-bottom:8px">
-          <div class="task-title">${t.text.replace(/</g,'&lt;')}${t.endDate&&today>t.endDate?' <span class="task-ended-badge">Đã kết thúc</span>':''}</div>
-          <div class="task-streak active">🏆 Kỷ lục ${best} ngày · Hiện tại ${cur} ngày</div>
-        </div>
-        <div class="task-hist-list">${runsHtml}</div>
-      </div>`;
-    }).join('');
-    el.innerHTML=html;
-    return;
-  }
-
-  const activeTasks=tasks.filter(t=>!(t.endDate&&today>t.endDate));
-  const sorted=[...activeTasks].sort((a,b)=>taskStreak(b.doneDates)-taskStreak(a.doneDates)||b.createdAt-a.createdAt);
-  if(!sorted.length){
-    html+=`<div class="task-empty">Không có nhiệm vụ đang hoạt động.<br>Các chuỗi đã đến hạn được lưu ở mục "🕘 Lịch sử".</div>`;
-    el.innerHTML=html;
-    return;
-  }
-  html+=sorted.map((t,idx)=>{
-    const col=taskColor(t.id);
-    const colorStyle=` style="--tc:${col.done};--tc-soft:${col.soft}"`;
-    if(editingTaskId===t.id){
-      const safeText=t.text.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-      const curIdx=editingColorIndex!=null?editingColorIndex:taskColorIndex(t.id);
-      const curCol=TASK_PALETTE[curIdx];
-      const swatches=TASK_PALETTE.map((c,i)=>`<div class="task-color-swatch${i===curIdx?' selected':''}" style="background:${c.done}" onclick="selectEditColor(${i})"></div>`).join('');
-      const editDates=taskDisplayDates(t);
-      const editSet=new Set(t.doneDates);
-      const editDots=editDates.map(ds=>{
-        const d=new Date(ds+'T00:00:00');
-        const isDone=editSet.has(ds);
-        const isFuture=ds>today;
-        const dot=isFuture?d.getDate():(isDone?'✓':'✕');
-        let cls='task-day'+(isDone?' done':'')+(ds===today?' today':'')+(isFuture?' future':'');
-        if(!isFuture)cls+=' date-editable';
-        const click=isFuture?'':`onclick="toggleTaskDate('${t.id}','${ds}')"`;
-        return`<div class="${cls}" ${click}><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
-      }).join('');
-      const editRowCls='task-days-row'+(editDates.length>7?' scrollable':'');
-      return`<div class="task-item" style="--tc:${curCol.done};--tc-soft:${curCol.soft}">
-        <div class="task-add-row">
-          <input type="text" id="edit-text-${t.id}" value="${safeText}" maxlength="120" onkeydown="if(event.key==='Enter')saveEditTask('${t.id}')">
-          <button onclick="saveEditTask('${t.id}')">✓</button>
-          <button class="task-add-cancel" onclick="cancelEditTask()">✕</button>
-        </div>
-        <div class="task-add-dates">
-          <div class="task-add-date-field"><label>Bắt đầu</label><input type="date" id="edit-start-${t.id}" value="${t.startDate||''}"></div>
-          <div class="task-add-date-field"><label>Kết thúc</label><input type="date" id="edit-end-${t.id}" value="${t.endDate||''}"></div>
-        </div>
-        <div class="task-edit-colors-label">Màu sắc</div>
-        <div class="task-edit-colors">${swatches}</div>
-        <div class="task-edit-colors-label" style="margin-top:10px">Chỉnh hoàn thành <span style="font-weight:400;color:var(--text3)">(bấm vào ngày để thay đổi)</span></div>
-        <div class="${editRowCls}">${editDots}</div>
-      </div>`;
-    }
-    const streak=taskStreak(t.doneDates);
-    const set=new Set(t.doneDates);
-    const outOfRange=(t.startDate&&today<t.startDate)||(t.endDate&&today>t.endDate);
-    let rangeLabel='';
-    if(t.startDate||t.endDate){
-      const s=t.startDate?fmtD(new Date(t.startDate+'T00:00:00')):'?';
-      const e=t.endDate?fmtD(new Date(t.endDate+'T00:00:00')):'Không giới hạn';
-      rangeLabel=`<div class="task-range">📅 ${s} → ${e}</div>`;
-    }
-    let countdownLabel='';
-    if(t.endDate){
-      const diffDays=Math.round((new Date(t.endDate+'T00:00:00')-new Date(today+'T00:00:00'))/86400000);
-      if(diffDays>0)countdownLabel=`<div class="task-countdown">⏳ Còn ${diffDays} ngày</div>`;
-      else countdownLabel=`<div class="task-countdown task-countdown-last">⏳ Ngày cuối cùng!</div>`;
-    }
-    const displayDates=taskDisplayDates(t);
-    let days='';
-    displayDates.forEach(ds=>{
-      const d=new Date(ds+'T00:00:00');
-      const isDone=set.has(ds);
-      const isToday=ds===today;
-      const isFuture=ds>today;
-      let cls='task-day';
-      if(isDone)cls+=' done';
-      if(isToday)cls+=' today';
-      if(isFuture)cls+=' future';
-      // Chỉ ô "hôm nay" mới bấm trực tiếp để tick/bỏ tick được; các ngày khác
-      // (quá khứ/tương lai) muốn sửa phải vào chế độ chỉnh sửa (nút bút chì).
-      const todayClickable=isToday&&!outOfRange;
-      if(todayClickable)cls+=' date-editable';
-      const click=todayClickable?`onclick="toggleTaskToday('${t.id}')"`:'';
-      const dot=isFuture?d.getDate():(isDone?'✓':'✕');
-      days+=`<div class="${cls}" ${click}><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
-    });
-    const rowCls='task-days-row'+(displayDates.length>7?' scrollable':'');
-    const totalDone=t.doneDates.length;
-    return`<div class="task-item"${colorStyle}>
-      <div class="task-item-top">
-        <div class="task-main">
-          <div class="task-title">${t.text.replace(/</g,'&lt;')} <span class="task-total-done">${totalDone} ngày</span></div>
-          ${rangeLabel}
-          ${countdownLabel}
-        </div>
-        <button class="task-edit" onclick="openEditTask('${t.id}')">✏️</button>
-        <button class="task-del" onclick="deleteTask('${t.id}')">🗑️</button>
-      </div>
-      <div class="${rowCls}">${days}</div>
-    </div>`;
-  }).join('');
-  el.innerHTML=html;
-}
-let tasksViewMode='list',tasksCalMonthOffset=0;
-function setTasksViewMode(mode){tasksViewMode=mode;renderTasksScreen();}
-function changeTasksCalMonth(delta){tasksCalMonthOffset+=delta;renderTasksScreen();}
-function renderTasksCalendarHtml(){
-  const now=new Date();
-  const base=new Date(now.getFullYear(),now.getMonth()+tasksCalMonthOffset,1);
-  const year=base.getFullYear(),month=base.getMonth();
-  const monthNames=['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
-  const todayStr=toDateStr(new Date());
-  let firstDay=new Date(year,month,1).getDay();
-  firstDay=(firstDay+6)%7;
-  const daysInMonth=new Date(year,month+1,0).getDate();
-  let grid='';
-  for(let i=0;i<firstDay;i++)grid+='<div class="cal-day empty"></div>';
-  for(let d=1;d<=daysInMonth;d++){
-    const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const activeTasks=tasks.filter(t=>(!t.startDate||dateStr>=t.startDate)&&(!t.endDate||dateStr<=t.endDate)&&dateStr>=toDateStr(new Date(t.createdAt)));
-    const ticks=activeTasks.filter(t=>t.doneDates.includes(dateStr)).map(t=>{
-      const col=taskColor(t.id);
-      return`<span class="tcal-tick" style="background:${col.done}">✓</span>`;
-    }).join('');
-    let cls='cal-day';
-    if(dateStr===todayStr)cls+=' today';
-    grid+=`<div class="${cls}"><div class="cal-day-num">${d}</div><div class="tcal-ticks-row">${ticks}</div></div>`;
-  }
-  return`<div class="cal-nav-row">
-    <button class="cal-nav-btn" onclick="changeTasksCalMonth(-1)">‹</button>
-    <div class="cal-month-title">${monthNames[month]} ${year}</div>
-    <button class="cal-nav-btn" onclick="changeTasksCalMonth(1)">›</button>
-  </div>
-  <div class="cal-weekdays"><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span></div>
-  <div class="cal-grid tcal-grid">${grid}</div>
-  ${tasks.length?`<div class="tcal-legend">${tasks.map(t=>`<div class="tcal-legend-item"><span class="tcal-dot" style="background:${taskColor(t.id).done}"></span>${t.text.replace(/</g,'&lt;')}</div>`).join('')}</div>`:''}`;
-}
-
 function openAnalysis(){
   analysisMonthOffset=0;
   renderAnalysis();
@@ -3049,8 +1927,8 @@ function renderAnalysis(){
     <button class="cal-nav-btn" onclick="changeAnalysisMonth(1)">›</button>
   </div>
   <div class="an-summary-row">
-    <div class="gh-summary-card expense"><div class="gh-summary-icon expense">↗</div><div class="gh-summary-body"><div class="gh-summary-label">Chi</div><div class="gh-summary-val">${maskAmount('-'+formatVND(totalExpense))}</div></div><button class="gh-summary-eye" onclick="toggleAmountsHidden()">${amountsHidden?'🙈':'👁️'}</button></div>
-    <div class="gh-summary-card income"><div class="gh-summary-icon income">↙</div><div class="gh-summary-body"><div class="gh-summary-label">Thu</div><div class="gh-summary-val">${maskIncomeCard('+'+formatVND(totalIncome))}</div></div><button class="gh-summary-eye" onclick="toggleIncomeCardHidden()">${incomeCardHidden?'🙈':'👁️'}</button></div>
+    <div class="gh-summary-card expense"><div class="gh-summary-icon expense">↗</div><div class="gh-summary-body"><div class="gh-summary-label">Chi</div><div class="gh-summary-val">${maskAmount('-'+formatVND(totalExpense))}</div></div></div>
+    <div class="gh-summary-card income"><div class="gh-summary-icon income">↙</div><div class="gh-summary-body"><div class="gh-summary-label">Thu</div><div class="gh-summary-val">${maskAmount('+'+formatVND(totalIncome))}</div></div></div>
   </div>`;
 
   if(!expensePhotos.length){
@@ -3213,21 +2091,14 @@ if(auth){
     currentUser=user;
     if(!user){
       if(photosUnsub){photosUnsub();photosUnsub=null;}
-      if(tasksUnsub){tasksUnsub();tasksUnsub=null;}
       photos=[];
-      loadTasks();
       updateThumbPreview();
-      if(document.getElementById('s-tasks').classList.contains('active'))renderTasksScreen();
       document.getElementById('login-screen').classList.remove('hide');
       return;
     }
     document.getElementById('login-screen').classList.add('hide');
     if(document.getElementById('s-gallery').classList.contains('active'))renderGallery();
     subscribeCloudPhotos();
-    subscribeCloudTasks();
-    // Thử đẩy lại ngay bất kỳ nhiệm vụ/lần xoá nào còn dở dang từ phiên
-    // trước (app bị tắt/F5 giữa lúc đang lưu) — không cần chờ onSnapshot.
-    retryPendingTaskSync();
   });
 }else{
   document.getElementById('login-screen').classList.add('hide');
@@ -3243,11 +2114,8 @@ document.addEventListener('keydown',(e)=>{
   else if(e.key==='Escape')closeViewer();
 });
 document.addEventListener('DOMContentLoaded',()=>{
-  showAppLockScreen();
   applyTheme(getTheme());
-  loadTasks();
   switchTab('gallery');
-  scheduleReminders();
   if(isStandalonePWA()){
     const hint=document.getElementById('login-safari-hint');
     if(hint)hint.style.display='block';
@@ -3271,12 +2139,6 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(!document.hidden&&swReg)swReg.update().catch(()=>{});
     });
   }
-  // Quay lại app (mở lại tab/app đã ghim) hoặc có mạng trở lại — thử đẩy lại
-  // mọi thay đổi nhiệm vụ còn "đang chờ đồng bộ" trong outbox localStorage.
-  document.addEventListener('visibilitychange',()=>{
-    if(!document.hidden)retryPendingTaskSync();
-  });
-  window.addEventListener('online',retryPendingTaskSync);
 });
 </script>
 </body>
