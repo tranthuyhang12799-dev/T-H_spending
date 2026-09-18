@@ -381,6 +381,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .task-item-top{display:flex;align-items:center;gap:10px}
 .task-main{flex:1;min-width:0}
 .task-title{font-size:14px;font-weight:600;color:var(--text);word-break:break-word}
+.task-ended-badge{display:inline-block;font-size:10px;font-weight:600;color:var(--text3);background:var(--surface2);border-radius:6px;padding:2px 6px;margin-left:4px;vertical-align:middle}
 .task-streak{font-size:11.5px;color:var(--text3);margin-top:2px}
 .task-streak.active{color:var(--accent2);font-weight:600}
 .task-check-today{width:32px;height:32px;border-radius:50%;border:2px solid #cfd3e8;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:#a7acc9;background:#fff}
@@ -2216,6 +2217,8 @@ function renderTasksScreen(){
   const el=document.getElementById('s-tasks');
   if(!el)return;
   loadTasks();
+  const today=toDateStr(new Date());
+  const dayLabels=['CN','T2','T3','T4','T5','T6','T7'];
   let html=`<div class="tasks-header-row">
     ${tasksShowHistory?'<div class="tasks-header-title">🕘 Lịch sử chuỗi</div>':`<div class="gh-toggle">
       <div class="gh-toggle-btn${tasksViewMode==='list'?' active':''}" onclick="setTasksViewMode('list')">Danh sách</div>
@@ -2261,7 +2264,7 @@ function renderTasksScreen(){
       }).join(''):'<div class="task-empty" style="padding:14px 0">Chưa có chuỗi ngày nào được hoàn thành</div>';
       return`<div class="task-item">
         <div class="task-main" style="margin-bottom:8px">
-          <div class="task-title">${t.text.replace(/</g,'&lt;')}</div>
+          <div class="task-title">${t.text.replace(/</g,'&lt;')}${t.endDate&&today>t.endDate?' <span class="task-ended-badge">Đã kết thúc</span>':''}</div>
           <div class="task-streak active">🏆 Kỷ lục ${best} ngày · Hiện tại ${cur} ngày</div>
         </div>
         <div class="task-hist-list">${runsHtml}</div>
@@ -2271,9 +2274,13 @@ function renderTasksScreen(){
     return;
   }
 
-  const today=toDateStr(new Date());
-  const dayLabels=['CN','T2','T3','T4','T5','T6','T7'];
-  const sorted=[...tasks].sort((a,b)=>taskStreak(b.doneDates)-taskStreak(a.doneDates)||b.createdAt-a.createdAt);
+  const activeTasks=tasks.filter(t=>!(t.endDate&&today>t.endDate));
+  const sorted=[...activeTasks].sort((a,b)=>taskStreak(b.doneDates)-taskStreak(a.doneDates)||b.createdAt-a.createdAt);
+  if(!sorted.length){
+    html+=`<div class="task-empty">Không có nhiệm vụ đang hoạt động.<br>Các chuỗi đã đến hạn được lưu ở mục "🕘 Lịch sử".</div>`;
+    el.innerHTML=html;
+    return;
+  }
   html+=sorted.map((t,idx)=>{
     const colorCls=idx%2===1?' tc-pink':'';
     if(editingTaskId===t.id){
@@ -2304,8 +2311,7 @@ function renderTasksScreen(){
     if(t.endDate){
       const diffDays=Math.round((new Date(t.endDate+'T00:00:00')-new Date(today+'T00:00:00'))/86400000);
       if(diffDays>0)countdownLabel=`<div class="task-countdown">⏳ Còn ${diffDays} ngày</div>`;
-      else if(diffDays===0)countdownLabel=`<div class="task-countdown task-countdown-last">⏳ Ngày cuối cùng!</div>`;
-      else countdownLabel=`<div class="task-countdown task-countdown-ended">⏳ Đã kết thúc ${Math.abs(diffDays)} ngày trước</div>`;
+      else countdownLabel=`<div class="task-countdown task-countdown-last">⏳ Ngày cuối cùng!</div>`;
     }
     const displayDates=taskDisplayDates(t);
     let days='';
