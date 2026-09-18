@@ -798,6 +798,19 @@ try{
 }
 const auth=firebaseOk?firebase.auth():null;
 const db=firebaseOk?firebase.firestore():null;
+if(db){
+  // Bật lưu trệm ngoại tuyến: các thao tác thêm/sửa/xoá (nhiệm vụ, ảnh...)
+  // được ghi vào IndexedDB ngay lập tức và tự động gửi tiếp lên Firestore khi
+  // có mạng trở lại — kể cả khi người dùng tắt app/mất mạng ngay sau khi thao
+  // tác, trước khi kịp đồng bộ lên cloud. Nếu không có bước này, một thao tác
+  // vừa thực hiện có thể bị mất hẳn nếu app bị đóng trước khi request mạng
+  // kịp hoàn tất.
+  // 'failed-precondition': đang mở nhiều tab cùng lúc (rất hiếm khi xảy ra
+  // với synchronizeTabs bật). 'unimplemented': trình duyệt không hỗ trợ.
+  // Trong cả hai trường hợp app vẫn hoạt động bình thường, chỉ là không có
+  // lớp bảo vệ ngoại tuyến này — không cần báo cho người dùng hay log ra.
+  db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+}
 let currentUser=null;
 let photosUnsub=null;
 
