@@ -393,6 +393,11 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .task-day.future .tdd-dot{background:transparent;border-style:dashed;border-color:var(--border);color:var(--text3);font-size:10px}
 .task-day:not(.done):not(.future):not(.today) .tdd-dot{background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.35);color:#ef4444;font-size:10px}
 .task-day.today:not(.done) .tdd-dot{background:rgba(239,68,68,0.10);border-color:rgba(239,68,68,0.4);color:#ef4444;font-size:10px}
+.task-day.date-editable{cursor:pointer}
+.task-day.date-editable .tdd-dot{box-shadow:0 0 0 2px rgba(var(--accent-rgb),0.4);transform:scale(1.08)}
+.task-edit-active{color:var(--accent)!important;opacity:1!important}
+.task-date-edit-hint{font-size:11px;color:var(--accent);margin:4px 0 -4px 2px;opacity:0.85}
+.task-total-done{display:inline-block;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-dim);border-radius:8px;padding:2px 7px;margin-left:6px;vertical-align:middle}
 .task-del{flex-shrink:0;background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:4px}
 .task-edit{flex-shrink:0;background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:4px}
 .task-days-row{display:flex;justify-content:space-between;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
@@ -2149,9 +2154,15 @@ function deleteTask(id){
 }
 let editingTaskId=null;
 let editingColorIndex=null;
+let dateEditTaskId=null;
+function toggleDateEditMode(id){
+  dateEditTaskId=dateEditTaskId===id?null:id;
+  renderTasksScreen();
+}
 function openEditTask(id){
   editingTaskId=id;
   editingColorIndex=taskColorIndex(id);
+  dateEditTaskId=null;
   taskAddOpen=false;
   renderTasksScreen();
   setTimeout(()=>{const inp=document.getElementById('edit-text-'+id);if(inp)inp.focus();},50);
@@ -2372,6 +2383,7 @@ function renderTasksScreen(){
       else countdownLabel=`<div class="task-countdown task-countdown-last">⏳ Ngày cuối cùng!</div>`;
     }
     const displayDates=taskDisplayDates(t);
+    const isDateEditing=dateEditTaskId===t.id;
     let days='';
     displayDates.forEach(ds=>{
       const d=new Date(ds+'T00:00:00');
@@ -2382,23 +2394,25 @@ function renderTasksScreen(){
       if(isDone)cls+=' done';
       if(isToday)cls+=' today';
       if(isFuture)cls+=' future';
+      if(isDateEditing&&!isFuture)cls+=' date-editable';
       const dot=isFuture?d.getDate():(isDone?'✓':'✕');
-      const clickHandler=isFuture?'':`onclick="toggleTaskDate('${t.id}','${ds}')"`;
-      days+=`<div class="${cls}" ${clickHandler} style="${isFuture?'':'cursor:pointer'}"><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
+      const clickHandler=(isDateEditing&&!isFuture)?`onclick="toggleTaskDate('${t.id}','${ds}')"`:'';
+      days+=`<div class="${cls}" ${clickHandler}><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
     });
     const rowCls='task-days-row'+(displayDates.length>7?' scrollable':'');
+    const totalDone=t.doneDates.length;
     return`<div class="task-item"${colorStyle}>
       <div class="task-item-top">
         <div class="task-main">
-          <div class="task-title">${t.text.replace(/</g,'&lt;')}</div>
-          <div class="task-streak${streak>0?' active':''}">🔥 ${streak} ngày liên tiếp</div>
+          <div class="task-title">${t.text.replace(/</g,'&lt;')} <span class="task-total-done">${totalDone} ngày</span></div>
           ${rangeLabel}
           ${countdownLabel}
         </div>
         <div class="task-check-today${doneToday?' done':''}${outOfRange?' disabled':''}" onclick="${outOfRange?'':`toggleTaskToday('${t.id}')`}">✓</div>
-        <button class="task-edit" onclick="openEditTask('${t.id}')">✏️</button>
+        <button class="task-edit${isDateEditing?' task-edit-active':''}" onclick="toggleDateEditMode('${t.id}')" title="${isDateEditing?'Xong':'Sửa ngày'}">✏️</button>
         <button class="task-del" onclick="deleteTask('${t.id}')">🗑️</button>
       </div>
+      ${isDateEditing?`<div class="task-date-edit-hint">Bấm vào ngày để chỉnh hoàn thành</div>`:''}
       <div class="${rowCls}">${days}</div>
     </div>`;
   }).join('');
