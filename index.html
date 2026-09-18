@@ -2261,11 +2261,12 @@ function renderTasksCalendarHtml(){
     if(dateStr===todayStr)cls+=' today';
     grid+=`<div class="${cls}${statusCls}"><div class="tcal-day-mark"></div><div class="cal-day-num">${d}</div></div>`;
   }
-  return`<div class="stats-month-nav" style="margin-bottom:14px">
+  return`<div class="cal-nav-row">
     <button class="cal-nav-btn" onclick="changeTasksCalMonth(-1)">‹</button>
-    <div class="stats-month-title">${monthNames[month]} ${year}</div>
+    <div class="cal-month-title">${monthNames[month]} ${year}</div>
     <button class="cal-nav-btn" onclick="changeTasksCalMonth(1)">›</button>
   </div>
+  <div class="cal-weekdays"><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span></div>
   <div class="cal-grid">${grid}</div>
   <div class="tcal-legend">
     <div class="tcal-legend-item"><span class="tcal-dot tcal-full"></span>Hoàn thành hết</div>
