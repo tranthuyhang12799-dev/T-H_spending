@@ -2371,7 +2371,7 @@ function renderTasksScreen(){
       if(isDone)cls+=' done';
       if(isToday)cls+=' today';
       if(isFuture)cls+=' future';
-      const dot=isFuture?d.getDate():(isDone?'✓':'✕');
+      const dot=isFuture?d.getDate():'✓';
       days+=`<div class="${cls}"><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
     });
     const rowCls='task-days-row'+(displayDates.length>7?' scrollable':'');
@@ -2383,7 +2383,7 @@ function renderTasksScreen(){
           ${rangeLabel}
           ${countdownLabel}
         </div>
-        <div class="task-check-today${doneToday?' done':''}${outOfRange?' disabled':''}" onclick="${outOfRange?'':`toggleTaskToday('${t.id}')`}">${doneToday?'✓':'✕'}</div>
+        <div class="task-check-today${doneToday?' done':''}${outOfRange?' disabled':''}" onclick="${outOfRange?'':`toggleTaskToday('${t.id}')`}">✓</div>
         <button class="task-edit" onclick="openEditTask('${t.id}')">✏️</button>
         <button class="task-del" onclick="deleteTask('${t.id}')">🗑️</button>
       </div>
