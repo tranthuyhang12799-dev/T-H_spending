@@ -342,6 +342,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .cal-day-amount.expense{color:#ef4444}
 .cal-day-amount.income{color:#22c55e}
 .cal-day-amount.mixed{color:var(--text2)}
+.cal-day-amount-empty{visibility:hidden}
 .cal-day.today .cal-day-num{box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:700;color:var(--text)}
 .cal-day.has-photo .cal-day-num{background:var(--accent-dim);color:var(--accent);font-weight:600}
 .cal-day.streak-day .cal-day-num{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:700}
@@ -1488,8 +1489,11 @@ function renderMonthCalendarHtml(year,month){
         const amtCls=net<0?'expense':net>0?'income':'mixed';
         const amtTxt=maskAmount((net<0?'-':net>0?'+':'')+formatCompactVND(net));
         amountHtml=`<div class="cal-day-amount ${amtCls}">${amtTxt}</div>`;
+      }else{
+        amountHtml=`<div class="cal-day-amount cal-day-amount-empty">&nbsp;</div>`;
       }
     }else{
+      amountHtml=`<div class="cal-day-amount cal-day-amount-empty">&nbsp;</div>`;
       inner=`<div class="cal-day-add" onclick="event.stopPropagation();openManualEntry(null,'${dateStr}')">+</div>`;
     }
     const clickAttr=hasPhoto?` onclick="calDayClick('${dateStr}')"`:'';
