@@ -2893,7 +2893,6 @@ function renderTasksScreen(){
         <div class="${editRowCls}">${editDots}</div>
       </div>`;
     }
-    const doneToday=t.doneDates.includes(today);
     const streak=taskStreak(t.doneDates);
     const set=new Set(t.doneDates);
     const outOfRange=(t.startDate&&today<t.startDate)||(t.endDate&&today>t.endDate);
@@ -2920,8 +2919,13 @@ function renderTasksScreen(){
       if(isDone)cls+=' done';
       if(isToday)cls+=' today';
       if(isFuture)cls+=' future';
+      // Chỉ ô "hôm nay" mới bấm trực tiếp để tick/bỏ tick được; các ngày khác
+      // (quá khứ/tương lai) muốn sửa phải vào chế độ chỉnh sửa (nút bút chì).
+      const todayClickable=isToday&&!outOfRange;
+      if(todayClickable)cls+=' date-editable';
+      const click=todayClickable?`onclick="toggleTaskToday('${t.id}')"`:'';
       const dot=isFuture?d.getDate():(isDone?'✓':'✕');
-      days+=`<div class="${cls}"><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
+      days+=`<div class="${cls}" ${click}><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
     });
     const rowCls='task-days-row'+(displayDates.length>7?' scrollable':'');
     const totalDone=t.doneDates.length;
@@ -2932,7 +2936,6 @@ function renderTasksScreen(){
           ${rangeLabel}
           ${countdownLabel}
         </div>
-        <div class="task-check-today${doneToday?' done':''}${outOfRange?' disabled':''}" onclick="${outOfRange?'':`toggleTaskToday('${t.id}')`}">✓</div>
         <button class="task-edit" onclick="openEditTask('${t.id}')">✏️</button>
         <button class="task-del" onclick="deleteTask('${t.id}')">🗑️</button>
       </div>
