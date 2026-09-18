@@ -2130,6 +2130,15 @@ function toggleTaskToday(id){
   saveTasks();
   renderTasksScreen();
 }
+function toggleTaskDate(id,ds){
+  const t=tasks.find(x=>x.id===id);
+  if(!t)return;
+  const idx=t.doneDates.indexOf(ds);
+  if(idx>=0)t.doneDates.splice(idx,1);
+  else t.doneDates.push(ds);
+  saveTasks();
+  renderTasksScreen();
+}
 function deleteTask(id){
   const t=tasks.find(x=>x.id===id);
   const name=t?t.text.replace(/</g,'&lt;'):'nhiệm vụ này';
@@ -2374,7 +2383,8 @@ function renderTasksScreen(){
       if(isToday)cls+=' today';
       if(isFuture)cls+=' future';
       const dot=isFuture?d.getDate():(isDone?'✓':'✕');
-      days+=`<div class="${cls}"><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
+      const clickHandler=isFuture?'':`onclick="toggleTaskDate('${t.id}','${ds}')"`;
+      days+=`<div class="${cls}" ${clickHandler} style="${isFuture?'':'cursor:pointer'}"><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
     });
     const rowCls='task-days-row'+(displayDates.length>7?' scrollable':'');
     return`<div class="task-item"${colorStyle}>
