@@ -324,6 +324,8 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 /* CALENDAR POPUP */
 .cal-modal{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center}
 .cal-modal.open{display:flex}
+#analysis-modal{bottom:calc(60px + var(--safe-bottom))}
+#analysis-modal .cal-sheet{border-radius:24px;padding-bottom:18px}
 .cal-sheet{background:var(--surface);width:100%;max-width:440px;border-radius:24px 24px 0 0;padding:18px 18px calc(var(--safe-bottom) + 18px);animation:calUp .22s ease}
 @keyframes calUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
