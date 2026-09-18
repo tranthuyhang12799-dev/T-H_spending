@@ -106,6 +106,21 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .allow-btn{background:var(--accent);color:#fff;border:none;border-radius:14px;padding:13px 28px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit}
 /* FLASH */
 #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:999;transition:opacity .08s}
+/* APP LOCK */
+.applock-screen{position:fixed;inset:0;z-index:5000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center}
+.applock-screen.open{display:flex}
+.applock-icon{width:72px;height:72px;border-radius:22px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:34px}
+.applock-title{font-size:18px;font-weight:700;color:var(--text)}
+.applock-sub{font-size:13px;color:var(--text2);max-width:260px;line-height:1.6}
+.applock-pwd-input{width:100%;max-width:240px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;font-size:20px;letter-spacing:6px;text-align:center;color:var(--text);font-family:inherit;outline:none}
+.applock-btn{width:100%;max-width:240px;padding:14px;border-radius:14px;background:var(--accent);color:#fff;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+.applock-bio-btn{width:72px;height:72px;border-radius:50%;background:var(--accent-dim);border:none;font-size:30px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.applock-err{font-size:12.5px;color:#ef4444;min-height:16px}
+/* APP LOCK SETTINGS MODAL */
+.applock-method-row{display:flex;gap:8px;margin:10px 0 4px}
+.applock-method-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:14px;background:var(--surface2);border:1.5px solid transparent;cursor:pointer;font-family:inherit;color:var(--text2);font-size:12.5px;font-weight:600}
+.applock-method-btn.active{border-color:var(--accent);color:var(--text);background:var(--accent-dim)}
+.applock-method-icon{font-size:22px}
 /* GALLERY */
 #s-gallery{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 14px calc(var(--safe-bottom) + 14px);gap:20px;align-items:stretch}
 #s-gallery::-webkit-scrollbar{display:none}
@@ -502,6 +517,23 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
     </button>
     <p class="login-note" id="login-safari-hint" style="display:none">Nếu đăng nhập xong bị quay lại màn hình này: đây là hạn chế của Safari với app đã ghim màn hình chính. Hãy <a href="." target="_blank" style="color:var(--accent)">mở link này bằng Safari thường</a> để đăng nhập lần đầu, sau đó quay lại icon đã ghim — phiên đăng nhập sẽ tự được nhận.</p>
     <p class="login-note">Ảnh và dữ liệu chi tiêu được lưu trên cloud, gắn với tài khoản Google — không lưu trên máy.</p>
+  </div>
+</div>
+
+<div id="applock-screen" class="applock-screen">
+  <div class="applock-icon">🔒</div>
+  <div class="applock-title">Ứng dụng đã khóa</div>
+  <div class="applock-sub" id="applock-sub">Xác thực để tiếp tục</div>
+  <div id="applock-body"></div>
+</div>
+
+<div id="applock-modal" class="cal-modal">
+  <div class="cal-sheet">
+    <div class="cal-header">
+      <div class="cal-title">🔐 Khóa ứng dụng</div>
+      <button class="cal-nav-btn" onclick="closeAppLockSettings()">✕</button>
+    </div>
+    <div id="applock-settings-body"></div>
   </div>
 </div>
 
@@ -2046,6 +2078,208 @@ function fireReminderNotification(){
     :`${pending.length} nhiệm vụ chưa hoàn thành: ${pending.map(t=>t.text).join(', ')}`;
   try{new Notification('🔥 Nhắc nhiệm vụ hôm nay',{body,icon:'icon-192.png',badge:'icon-192.png'});}catch(e){}
 }
+/* ===== APP LOCK ===== */
+const APPLOCK_KEY='th_applock_cfg';
+function loadAppLockCfg(){
+  try{return JSON.parse(localStorage.getItem(APPLOCK_KEY))||{};}catch(e){return{};}
+}
+function saveAppLockCfg(cfg){try{localStorage.setItem(APPLOCK_KEY,JSON.stringify(cfg));}catch(e){}}
+function getAppLockSummary(){
+  const cfg=loadAppLockCfg();
+  if(!cfg.enabled)return'Đang tắt';
+  return cfg.method==='biometric'?'Bật · Sinh trắc học (Face/Touch ID)':'Bật · Mật khẩu';
+}
+async function sha256Hex(text){
+  const enc=new TextEncoder().encode(text);
+  const buf=await crypto.subtle.digest('SHA-256',enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function hasWebAuthn(){
+  return!!(window.PublicKeyCredential&&navigator.credentials&&navigator.credentials.create);
+}
+function b64uToBuf(s){
+  s=s.replace(/-/g,'+').replace(/_/g,'/');
+  while(s.length%4)s+='=';
+  const bin=atob(s);
+  const buf=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
+  return buf;
+}
+function bufToB64u(buf){
+  let bin='';
+  new Uint8Array(buf).forEach(b=>bin+=String.fromCharCode(b));
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function registerBiometric(){
+  if(!hasWebAuthn()){showToast('Thiết bị/trình duyệt này không hỗ trợ sinh trắc học');return false;}
+  try{
+    const challenge=crypto.getRandomValues(new Uint8Array(32));
+    const userId=crypto.getRandomValues(new Uint8Array(16));
+    const cred=await navigator.credentials.create({publicKey:{
+      challenge,
+      rp:{name:'T&H Spending'},
+      user:{id:userId,name:(currentUser&&currentUser.email)||'user',displayName:getDisplayName()||'Người dùng'},
+      pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
+      authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'},
+      timeout:60000
+    }});
+    if(!cred)return false;
+    const cfg=loadAppLockCfg();
+    cfg.credId=bufToB64u(cred.rawId);
+    saveAppLockCfg(cfg);
+    return true;
+  }catch(e){console.error(e);showToast('Không thể đăng ký sinh trắc học: '+(e.message||e));return false;}
+}
+async function verifyBiometric(){
+  const cfg=loadAppLockCfg();
+  if(!cfg.credId){showToast('Chưa đăng ký sinh trắc học');return false;}
+  if(!hasWebAuthn())return false;
+  try{
+    const challenge=crypto.getRandomValues(new Uint8Array(32));
+    const assertion=await navigator.credentials.get({publicKey:{
+      challenge,
+      allowCredentials:[{id:b64uToBuf(cfg.credId),type:'public-key'}],
+      userVerification:'required',
+      timeout:60000
+    }});
+    return!!assertion;
+  }catch(e){console.error(e);return false;}
+}
+let appLockUnlocked=false,appLockSetupMethod='password';
+function isAppLockEnabled(){return!!loadAppLockCfg().enabled;}
+function showAppLockScreen(){
+  if(!isAppLockEnabled()||appLockUnlocked){return;}
+  document.getElementById('applock-screen').classList.add('open');
+  renderAppLockScreenBody();
+}
+function hideAppLockScreen(){
+  appLockUnlocked=true;
+  document.getElementById('applock-screen').classList.remove('open');
+}
+function renderAppLockScreenBody(){
+  const cfg=loadAppLockCfg();
+  const body=document.getElementById('applock-body');
+  const sub=document.getElementById('applock-sub');
+  if(cfg.method==='biometric'){
+    sub.textContent='Chạm để xác thực bằng khuôn mặt / vân tay';
+    body.innerHTML=`
+      <button class="applock-bio-btn" onclick="attemptBiometricUnlock()">🙂</button>
+      <div class="applock-err" id="applock-err"></div>
+      <button class="applock-btn" style="margin-top:14px;background:var(--surface2);color:var(--text)" onclick="attemptBiometricUnlock()">Mở khóa</button>
+    `;
+    attemptBiometricUnlock(true);
+  }else{
+    sub.textContent='Nhập mật khẩu để tiếp tục';
+    body.innerHTML=`
+      <input type="password" inputmode="numeric" class="applock-pwd-input" id="applock-pwd-input" placeholder="••••" maxlength="20" autofocus>
+      <div class="applock-err" id="applock-err"></div>
+      <button class="applock-btn" style="margin-top:14px" onclick="attemptPasswordUnlock()">Mở khóa</button>
+    `;
+    const inp=document.getElementById('applock-pwd-input');
+    if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter')attemptPasswordUnlock();});
+  }
+}
+async function attemptPasswordUnlock(){
+  const inp=document.getElementById('applock-pwd-input');
+  const err=document.getElementById('applock-err');
+  const cfg=loadAppLockCfg();
+  const hash=await sha256Hex(inp.value||'');
+  if(hash===cfg.pwdHash){
+    if(err)err.textContent='';
+    hideAppLockScreen();
+  }else{
+    if(err)err.textContent='Sai mật khẩu, thử lại';
+    if(inp){inp.value='';inp.focus();}
+  }
+}
+async function attemptBiometricUnlock(silent){
+  const err=document.getElementById('applock-err');
+  const ok=await verifyBiometric();
+  if(ok){hideAppLockScreen();}
+  else if(err&&!silent)err.textContent='Xác thực thất bại, thử lại';
+}
+function openAppLockSettings(){
+  const cfg=loadAppLockCfg();
+  appLockSetupMethod=cfg.method||'password';
+  document.getElementById('applock-modal').classList.add('open');
+  renderAppLockSettingsUI();
+}
+function closeAppLockSettings(){
+  document.getElementById('applock-modal').classList.remove('open');
+  renderSettingsUI();
+}
+function pickAppLockMethod(m){appLockSetupMethod=m;renderAppLockSettingsUI();}
+function renderAppLockSettingsUI(){
+  const cfg=loadAppLockCfg();
+  const enabled=!!cfg.enabled;
+  const bioSupported=hasWebAuthn();
+  document.getElementById('applock-settings-body').innerHTML=`
+    <div class="reminder-toggle-row">
+      <div><div class="reminder-toggle-label">Bật khóa ứng dụng</div><div class="reminder-toggle-sub">Yêu cầu xác thực mỗi khi mở app</div></div>
+      <button class="toggle-switch${enabled?' on':''}" onclick="toggleAppLockMaster()"></button>
+    </div>
+    <div id="applock-detail" style="${enabled?'':'opacity:0.4;pointer-events:none'}">
+      <div class="reminder-section-title">Phương thức xác thực</div>
+      <div class="applock-method-row">
+        <button class="applock-method-btn${appLockSetupMethod==='password'?' active':''}" onclick="pickAppLockMethod('password')"><div class="applock-method-icon">🔢</div>Mật khẩu</button>
+        <button class="applock-method-btn${appLockSetupMethod==='biometric'?' active':''}" onclick="pickAppLockMethod('biometric')"><div class="applock-method-icon">🆔</div>Sinh trắc học</button>
+      </div>
+      ${appLockSetupMethod==='password'?`
+        <div class="reminder-section-title">Đặt mật khẩu</div>
+        <input type="password" inputmode="numeric" class="applock-pwd-input" id="applock-set-pwd1" placeholder="Mật khẩu mới" maxlength="20" style="margin-bottom:8px">
+        <input type="password" inputmode="numeric" class="applock-pwd-input" id="applock-set-pwd2" placeholder="Nhập lại mật khẩu" maxlength="20">
+        <div class="applock-err" id="applock-set-err"></div>
+        <button class="reminder-save-btn" onclick="saveAppLockPassword()">Lưu mật khẩu</button>
+        <div class="reminder-note">${cfg.pwdHash?'Đã đặt mật khẩu. Nhập mật khẩu mới ở trên để đổi.':'Chưa đặt mật khẩu.'}</div>
+      `:`
+        <div class="reminder-section-title">Sinh trắc học (Face ID / Touch ID / Vân tay)</div>
+        ${!bioSupported?'<div class="reminder-note">⚠️ Thiết bị hoặc trình duyệt này không hỗ trợ sinh trắc học. Hãy dùng mật khẩu thay thế.</div>':`
+        <button class="reminder-save-btn" onclick="saveAppLockBiometric()">${cfg.credId&&cfg.method==='biometric'?'Đăng ký lại':'Đăng ký khuôn mặt / vân tay'}</button>
+        <div class="reminder-note">${cfg.credId&&cfg.method==='biometric'?'✅ Đã đăng ký trên thiết bị này.':'Sẽ dùng khóa sinh trắc học có sẵn của thiết bị (Face ID, Touch ID, vân tay Android...).'}</div>
+        `}
+      `}
+    </div>
+    <div class="reminder-note">Khóa chỉ áp dụng trên thiết bị này, không đồng bộ qua tài khoản.</div>
+  `;
+}
+function toggleAppLockMaster(){
+  const cfg=loadAppLockCfg();
+  cfg.enabled=!cfg.enabled;
+  if(cfg.enabled&&!cfg.method)cfg.method=appLockSetupMethod;
+  saveAppLockCfg(cfg);
+  renderAppLockSettingsUI();
+}
+async function saveAppLockPassword(){
+  const p1=document.getElementById('applock-set-pwd1').value||'';
+  const p2=document.getElementById('applock-set-pwd2').value||'';
+  const err=document.getElementById('applock-set-err');
+  if(p1.length<4){err.textContent='Mật khẩu cần ít nhất 4 ký tự';return;}
+  if(p1!==p2){err.textContent='Hai mật khẩu không khớp';return;}
+  err.textContent='';
+  const cfg=loadAppLockCfg();
+  cfg.pwdHash=await sha256Hex(p1);
+  cfg.method='password';
+  cfg.enabled=true;
+  saveAppLockCfg(cfg);
+  showToast('✅ Đã đặt mật khẩu khóa ứng dụng');
+  renderAppLockSettingsUI();
+}
+async function saveAppLockBiometric(){
+  const ok=await registerBiometric();
+  if(ok){
+    const cfg=loadAppLockCfg();
+    cfg.method='biometric';
+    cfg.enabled=true;
+    saveAppLockCfg(cfg);
+    showToast('✅ Đã đăng ký sinh trắc học');
+    renderAppLockSettingsUI();
+  }
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&isAppLockEnabled())appLockUnlocked=false;
+  else if(!document.hidden)showAppLockScreen();
+});
+
 function renderSettingsUI(){
   const el=document.getElementById('s-settings');
   if(!el)return;
@@ -2080,6 +2314,7 @@ function renderSettingsUI(){
     <div class="fr-section-title" style="margin-top:16px">Chức năng</div>
     <div class="fab-sheet-list" style="background:var(--surface);border-radius:16px;overflow:hidden;padding:0">
       <div class="fab-sheet-item" onclick="openReminderSettings()"><div class="fab-sheet-icon" style="background:rgba(251,191,36,0.15);color:#f59e0b">🔔</div><div><strong>Nhắc nhở nhiệm vụ</strong><span>${getReminderSummary()}</span></div></div>
+      <div class="fab-sheet-item" onclick="openAppLockSettings()"><div class="fab-sheet-icon" style="background:rgba(99,102,241,0.15);color:#6366f1">🔐</div><div><strong>Khóa ứng dụng</strong><span>${getAppLockSummary()}</span></div></div>
     </div>
 
     <div class="fr-section-title" style="margin-top:16px">Giao diện</div>
@@ -2836,6 +3071,7 @@ document.addEventListener('keydown',(e)=>{
   else if(e.key==='Escape')closeViewer();
 });
 document.addEventListener('DOMContentLoaded',()=>{
+  showAppLockScreen();
   applyTheme(getTheme());
   switchTab('gallery');
   scheduleReminders();
