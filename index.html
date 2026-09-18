@@ -363,6 +363,9 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .task-add-date-field label{font-size:11px;color:var(--text3);padding-left:2px}
 .task-add-date-field input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:9px 10px;font-size:12.5px;color:var(--text);font-family:inherit;outline:none;color-scheme:light dark}
 .task-range{font-size:11px;color:var(--text3);margin-top:3px}
+.task-countdown{font-size:11px;color:var(--accent);font-weight:600;margin-top:3px}
+.task-countdown-last{color:#f59e0b}
+.task-countdown-ended{color:var(--text3);font-weight:500}
 .task-check-today.disabled{opacity:0.35;cursor:not-allowed}
 .tcal-day-mark{position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%}
 .cal-day.tcal-full{position:relative}
@@ -390,8 +393,12 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .task-item.tc-pink .tdd-dot{border-color:#f4c2d7;color:#e8a4c2}
 .task-item.tc-pink .task-day.done .tdd-dot{background:#EE8FBA;border-color:transparent;color:#fff}
 .task-day.today .tdd-dot{box-shadow:0 0 0 2px var(--accent-dim)}
+.task-day.future .tdd-dot{background:transparent;border-style:dashed;border-color:var(--border);color:var(--text3);font-size:10px}
 .task-del{flex-shrink:0;background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:4px}
 .task-days-row{display:flex;justify-content:space-between;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.task-days-row.scrollable{justify-content:flex-start;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.task-days-row.scrollable::-webkit-scrollbar{display:none}
+.task-days-row.scrollable .task-day{flex:0 0 30px}
 .tdd-label{font-size:10px;color:var(--text3)}
 .task-empty{text-align:center;color:var(--text3);font-size:13.5px;padding:30px 10px}
 .task-hist-run{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:10px;padding:8px 12px;margin-top:6px;font-size:13px}
@@ -2144,6 +2151,27 @@ function taskBestStreak(doneDates){
   const runs=taskStreakRuns(doneDates);
   return runs.reduce((m,r)=>Math.max(m,r.len),0);
 }
+function addDaysStr(ds,n){const d=new Date(ds+'T00:00:00');d.setDate(d.getDate()+n);return toDateStr(d);}
+function taskDisplayDates(t){
+  const today=toDateStr(new Date());
+  let start,end;
+  if(t.startDate&&t.endDate){start=t.startDate;end=t.endDate;}
+  else if(t.startDate){start=t.startDate;end=t.startDate>today?addDaysStr(t.startDate,6):today;}
+  else if(t.endDate){end=t.endDate<today?t.endDate:today;start=addDaysStr(end,-6);}
+  else{end=today;start=addDaysStr(today,-6);}
+  const dates=[];
+  let cursor=new Date(start+'T00:00:00');
+  const endD=new Date(end+'T00:00:00');
+  while(cursor<=endD){dates.push(toDateStr(cursor));cursor.setDate(cursor.getDate()+1);}
+  // Giới hạn số ngày hiển thị để tránh hàng quá dài, ưu tiên giữ các ngày gần hôm nay nhất.
+  const MAX_DAYS=31;
+  if(dates.length>MAX_DAYS){
+    const todayIdx=dates.indexOf(today);
+    const from=Math.max(0,(todayIdx>=0?todayIdx:dates.length-1)-MAX_DAYS+8);
+    return dates.slice(from,from+MAX_DAYS);
+  }
+  return dates;
+}
 let tasksShowHistory=false;
 function toggleTasksHistory(){
   tasksShowHistory=!tasksShowHistory;
@@ -2224,26 +2252,40 @@ function renderTasksScreen(){
       const e=t.endDate?fmtD(new Date(t.endDate+'T00:00:00')):'Không giới hạn';
       rangeLabel=`<div class="task-range">📅 ${s} → ${e}</div>`;
     }
+    let countdownLabel='';
+    if(t.endDate){
+      const diffDays=Math.round((new Date(t.endDate+'T00:00:00')-new Date(today+'T00:00:00'))/86400000);
+      if(diffDays>0)countdownLabel=`<div class="task-countdown">⏳ Còn ${diffDays} ngày</div>`;
+      else if(diffDays===0)countdownLabel=`<div class="task-countdown task-countdown-last">⏳ Ngày cuối cùng!</div>`;
+      else countdownLabel=`<div class="task-countdown task-countdown-ended">⏳ Đã kết thúc ${Math.abs(diffDays)} ngày trước</div>`;
+    }
+    const displayDates=taskDisplayDates(t);
     let days='';
-    for(let i=6;i>=0;i--){
-      const d=new Date();
-      d.setDate(d.getDate()-i);
-      const ds=toDateStr(d);
+    displayDates.forEach(ds=>{
+      const d=new Date(ds+'T00:00:00');
       const isDone=set.has(ds);
       const isToday=ds===today;
-      days+=`<div class="task-day${isDone?' done':''}${isToday?' today':''}"><span class="tdd-dot">${isDone?'✓':'✕'}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
-    }
+      const isFuture=ds>today;
+      let cls='task-day';
+      if(isDone)cls+=' done';
+      if(isToday)cls+=' today';
+      if(isFuture)cls+=' future';
+      const dot=isFuture?d.getDate():(isDone?'✓':'✕');
+      days+=`<div class="${cls}"><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
+    });
+    const rowCls='task-days-row'+(displayDates.length>7?' scrollable':'');
     return`<div class="task-item${colorCls}">
       <div class="task-item-top">
         <div class="task-main">
           <div class="task-title">${t.text.replace(/</g,'&lt;')}</div>
           <div class="task-streak${streak>0?' active':''}">🔥 ${streak} ngày liên tiếp</div>
           ${rangeLabel}
+          ${countdownLabel}
         </div>
         <div class="task-check-today${doneToday?' done':''}${outOfRange?' disabled':''}" onclick="${outOfRange?'':`toggleTaskToday('${t.id}')`}">${doneToday?'✓':'✕'}</div>
         <button class="task-del" onclick="deleteTask('${t.id}')">🗑️</button>
       </div>
-      <div class="task-days-row">${days}</div>
+      <div class="${rowCls}">${days}</div>
     </div>`;
   }).join('');
   el.innerHTML=html;
