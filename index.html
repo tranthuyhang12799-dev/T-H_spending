@@ -395,6 +395,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .task-day.today .tdd-dot{box-shadow:0 0 0 2px var(--accent-dim)}
 .task-day.future .tdd-dot{background:transparent;border-style:dashed;border-color:var(--border);color:var(--text3);font-size:10px}
 .task-del{flex-shrink:0;background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:4px}
+.task-edit{flex-shrink:0;background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:4px}
 .task-days-row{display:flex;justify-content:space-between;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
 .task-days-row.scrollable{justify-content:flex-start;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .task-days-row.scrollable::-webkit-scrollbar{display:none}
@@ -2076,6 +2077,7 @@ function openTasks(){switchTab('tasks');}
 let taskAddOpen=false;
 function openTaskAddForm(){
   taskAddOpen=true;
+  editingTaskId=null;
   renderTasksScreen();
   setTimeout(()=>{const inp=document.getElementById('task-input');if(inp)inp.focus();},50);
 }
@@ -2108,7 +2110,39 @@ function toggleTaskToday(id){
   renderTasksScreen();
 }
 function deleteTask(id){
+  const t=tasks.find(x=>x.id===id);
+  const name=t?t.text.replace(/</g,'&lt;'):'nhiệm vụ này';
+  if(!confirm(`Xoá "${name}"? Toàn bộ chuỗi ngày đã hoàn thành sẽ bị mất.`))return;
   tasks=tasks.filter(x=>x.id!==id);
+  saveTasks();
+  renderTasksScreen();
+}
+let editingTaskId=null;
+function openEditTask(id){
+  editingTaskId=id;
+  taskAddOpen=false;
+  renderTasksScreen();
+  setTimeout(()=>{const inp=document.getElementById('edit-text-'+id);if(inp)inp.focus();},50);
+}
+function cancelEditTask(){
+  editingTaskId=null;
+  renderTasksScreen();
+}
+function saveEditTask(id){
+  const t=tasks.find(x=>x.id===id);
+  if(!t)return;
+  const textInp=document.getElementById('edit-text-'+id);
+  const startInp=document.getElementById('edit-start-'+id);
+  const endInp=document.getElementById('edit-end-'+id);
+  const text=(textInp&&textInp.value||'').trim();
+  if(!text){showToast('Vui lòng nhập tên nhiệm vụ');return;}
+  const startDate=startInp&&startInp.value?startInp.value:null;
+  const endDate=endInp&&endInp.value?endInp.value:null;
+  if(startDate&&endDate&&endDate<startDate){showToast('Ngày kết thúc phải sau ngày bắt đầu');return;}
+  t.text=text;
+  t.startDate=startDate;
+  t.endDate=endDate;
+  editingTaskId=null;
   saveTasks();
   renderTasksScreen();
 }
@@ -2242,6 +2276,20 @@ function renderTasksScreen(){
   const sorted=[...tasks].sort((a,b)=>taskStreak(b.doneDates)-taskStreak(a.doneDates)||b.createdAt-a.createdAt);
   html+=sorted.map((t,idx)=>{
     const colorCls=idx%2===1?' tc-pink':'';
+    if(editingTaskId===t.id){
+      const safeText=t.text.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+      return`<div class="task-item${colorCls}">
+        <div class="task-add-row">
+          <input type="text" id="edit-text-${t.id}" value="${safeText}" maxlength="120" onkeydown="if(event.key==='Enter')saveEditTask('${t.id}')">
+          <button onclick="saveEditTask('${t.id}')">✓</button>
+          <button class="task-add-cancel" onclick="cancelEditTask()">✕</button>
+        </div>
+        <div class="task-add-dates">
+          <div class="task-add-date-field"><label>Bắt đầu</label><input type="date" id="edit-start-${t.id}" value="${t.startDate||''}"></div>
+          <div class="task-add-date-field"><label>Kết thúc</label><input type="date" id="edit-end-${t.id}" value="${t.endDate||''}"></div>
+        </div>
+      </div>`;
+    }
     const doneToday=t.doneDates.includes(today);
     const streak=taskStreak(t.doneDates);
     const set=new Set(t.doneDates);
@@ -2283,6 +2331,7 @@ function renderTasksScreen(){
           ${countdownLabel}
         </div>
         <div class="task-check-today${doneToday?' done':''}${outOfRange?' disabled':''}" onclick="${outOfRange?'':`toggleTaskToday('${t.id}')`}">${doneToday?'✓':'✕'}</div>
+        <button class="task-edit" onclick="openEditTask('${t.id}')">✏️</button>
         <button class="task-del" onclick="deleteTask('${t.id}')">🗑️</button>
       </div>
       <div class="${rowCls}">${days}</div>
