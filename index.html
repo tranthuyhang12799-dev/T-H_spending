@@ -65,6 +65,12 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .cat-pills{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;flex-shrink:0}
 .cat-pills::-webkit-scrollbar{display:none}
 .cat-pills.cat-pills-wrap{flex-wrap:wrap;overflow:visible;padding-bottom:0}
+/* Trên máy tính (chuột, không chạm) không kéo ngang được vì thanh cuộn bị ẩn,
+   nên tự xuống dòng để thấy hết danh mục. Điện thoại (chạm) vẫn giữ cuộn ngang
+   như cũ — không đổi hành vi trên mobile. */
+@media (hover:hover) and (pointer:fine){
+  .cat-pills.cat-pills-light{flex-wrap:wrap;overflow:visible;padding-bottom:0}
+}
 .cat-pill{flex-shrink:0;display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.5);border:0.5px solid rgba(255,255,255,0.15);border-radius:14px;padding:6px 10px;font-size:11.5px;color:rgba(255,255,255,0.75);cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap;font-family:inherit;line-height:1.4}
 .cat-pill.active{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;color:#fff;font-weight:600}
 .ph-cat-icon{position:absolute;top:5px;left:5px;font-size:14px;background:rgba(0,0,0,0.45);border-radius:8px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
@@ -988,9 +994,6 @@ const EXPENSE_CATS=[
   {id:'vat-dung-ca-nhan',icon:'🧴',label:'Vật dụng cá nhân',color:'#a855f7'},
   {id:'mua-sam',icon:'🛍️',label:'Mua sắm',color:'#ec4899'},
   {id:'xa-giao',icon:'🎉',label:'Xã giao',color:'#f97316'},
-  {id:'hoa-don',icon:'🧾',label:'Hoá đơn',color:'#ef4444'},
-  {id:'nha-o',icon:'🏠',label:'Nhà ở',color:'#14b8a6'},
-  {id:'giai-tri',icon:'🎬',label:'Giải trí',color:'#8b5cf6'},
   {id:'suc-khoe',icon:'🩹',label:'Sức khoẻ',color:'#f43f5e'},
   {id:'giao-duc',icon:'📚',label:'Giáo dục',color:'#6366f1'},
   {id:'vo-hinh',icon:'👻',label:'Chi phí vô hình',color:'#6b7280'},
@@ -2477,14 +2480,67 @@ function taskColor(id){
 }
 function tasksStorageKey(){return 'th_tasks_'+(currentUser?currentUser.uid:'guest');}
 function loadTasks(){
+  // Chỉ dùng làm bộ nhớ đệm tạm (offline/khởi động nhanh) — nguồn dữ liệu thật
+  // nằm trên Firestore và được đồng bộ qua subscribeCloudTasks().
   try{
     const raw=localStorage.getItem(tasksStorageKey());
     tasks=raw?JSON.parse(raw):[];
     tasks.forEach(t=>{if(!Array.isArray(t.doneDates))t.doneDates=[];});
   }catch(e){tasks=[];}
 }
-function saveTasks(){
+function cacheTasksLocally(){
   try{localStorage.setItem(tasksStorageKey(),JSON.stringify(tasks));}catch(e){}
+}
+function saveTasks(changedTask){
+  cacheTasksLocally();
+  if(changedTask)uploadTaskToCloud(changedTask);
+}
+async function uploadTaskToCloud(task){
+  if(!currentUser||!db)return;
+  try{
+    await db.collection('tasks').doc(task.id).set({
+      ownerUid:currentUser.uid,
+      text:task.text||'',
+      startDate:task.startDate||null,
+      endDate:task.endDate||null,
+      doneDates:Array.isArray(task.doneDates)?task.doneDates:[],
+      colorIndex:typeof task.colorIndex==='number'?task.colorIndex:null,
+      createdAt:task.createdAt||Date.now(),
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }catch(e){
+    console.error(e);
+    showToast('Lỗi đồng bộ nhiệm vụ ('+(e.code||e.message||'không rõ')+')');
+  }
+}
+function deleteTaskFromCloud(id){
+  if(!currentUser||!db)return;
+  db.collection('tasks').doc(id).delete().catch(e=>{
+    console.error(e);
+    showToast('Lỗi xoá nhiệm vụ trên cloud ('+(e.code||e.message||'không rõ')+')');
+  });
+}
+let tasksUnsub=null;
+function subscribeCloudTasks(){
+  if(tasksUnsub){tasksUnsub();tasksUnsub=null;}
+  if(!currentUser||!db)return;
+  tasksUnsub=db.collection('tasks').where('ownerUid','==',currentUser.uid)
+    .onSnapshot(snap=>{
+      tasks=snap.docs.map(d=>{
+        const t=d.data();
+        return{
+          id:d.id,text:t.text||'',startDate:t.startDate||null,endDate:t.endDate||null,
+          doneDates:Array.isArray(t.doneDates)?t.doneDates:[],
+          colorIndex:typeof t.colorIndex==='number'?t.colorIndex:undefined,
+          createdAt:t.createdAt||Date.now()
+        };
+      }).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      cacheTasksLocally();
+      if(document.getElementById('s-tasks').classList.contains('active'))renderTasksScreen();
+    },e=>{
+      console.error(e);
+      showToast('Lỗi đồng bộ nhiệm vụ ('+(e.code||e.message||'không rõ')+')');
+    });
 }
 function openTasks(){switchTab('tasks');}
 let taskAddOpen=false;
@@ -2507,9 +2563,10 @@ function addTask(){
   const startDate=startInp&&startInp.value?startInp.value:null;
   const endDate=endInp&&endInp.value?endInp.value:null;
   if(startDate&&endDate&&endDate<startDate){showToast('Ngày kết thúc phải sau ngày bắt đầu');return;}
-  tasks.unshift({id:'t'+Date.now()+Math.random().toString(36).slice(2,6),text,startDate,endDate,doneDates:[],createdAt:Date.now()});
+  const newTask={id:'t'+Date.now()+Math.random().toString(36).slice(2,6),text,startDate,endDate,doneDates:[],createdAt:Date.now()};
+  tasks.unshift(newTask);
   taskAddOpen=false;
-  saveTasks();
+  saveTasks(newTask);
   renderTasksScreen();
 }
 function toggleTaskToday(id){
@@ -2519,7 +2576,7 @@ function toggleTaskToday(id){
   const idx=t.doneDates.indexOf(today);
   if(idx>=0)t.doneDates.splice(idx,1);
   else t.doneDates.push(today);
-  saveTasks();
+  saveTasks(t);
   renderTasksScreen();
 }
 function toggleTaskDate(id,ds){
@@ -2528,7 +2585,7 @@ function toggleTaskDate(id,ds){
   const idx=t.doneDates.indexOf(ds);
   if(idx>=0)t.doneDates.splice(idx,1);
   else t.doneDates.push(ds);
-  saveTasks();
+  saveTasks(t);
   renderTasksScreen();
 }
 function deleteTask(id){
@@ -2536,7 +2593,8 @@ function deleteTask(id){
   const name=t?t.text.replace(/</g,'&lt;'):'nhiệm vụ này';
   if(!confirm(`Xoá "${name}"? Toàn bộ chuỗi ngày đã hoàn thành sẽ bị mất.`))return;
   tasks=tasks.filter(x=>x.id!==id);
-  saveTasks();
+  cacheTasksLocally();
+  deleteTaskFromCloud(id);
   renderTasksScreen();
 }
 let editingTaskId=null;
@@ -2587,7 +2645,7 @@ function saveEditTask(id){
   t.colorIndex=editingColorIndex!=null?editingColorIndex:taskColorIndex(id);
   editingTaskId=null;
   editingColorIndex=null;
-  saveTasks();
+  saveTasks(t);
   renderTasksScreen();
 }
 function taskStreak(doneDates){
@@ -2659,7 +2717,6 @@ function fmtD(d){return`${String(d.getDate()).padStart(2,'0')}/${String(d.getMon
 function renderTasksScreen(){
   const el=document.getElementById('s-tasks');
   if(!el)return;
-  loadTasks();
   const today=toDateStr(new Date());
   const dayLabels=['CN','T2','T3','T4','T5','T6','T7'];
   let html=`<div class="tasks-header-row">
@@ -3046,14 +3103,18 @@ if(auth){
     currentUser=user;
     if(!user){
       if(photosUnsub){photosUnsub();photosUnsub=null;}
+      if(tasksUnsub){tasksUnsub();tasksUnsub=null;}
       photos=[];
+      loadTasks();
       updateThumbPreview();
+      if(document.getElementById('s-tasks').classList.contains('active'))renderTasksScreen();
       document.getElementById('login-screen').classList.remove('hide');
       return;
     }
     document.getElementById('login-screen').classList.add('hide');
     if(document.getElementById('s-gallery').classList.contains('active'))renderGallery();
     subscribeCloudPhotos();
+    subscribeCloudTasks();
   });
 }else{
   document.getElementById('login-screen').classList.add('hide');
@@ -3071,6 +3132,7 @@ document.addEventListener('keydown',(e)=>{
 document.addEventListener('DOMContentLoaded',()=>{
   showAppLockScreen();
   applyTheme(getTheme());
+  loadTasks();
   switchTab('gallery');
   scheduleReminders();
   if(isStandalonePWA()){
