@@ -2493,9 +2493,13 @@ function taskColor(id){
   return TASK_PALETTE[taskColorIndex(id)];
 }
 function tasksStorageKey(){return 'th_tasks_'+(currentUser?currentUser.uid:'guest');}
+function tasksDeletesKey(){return 'th_tasks_pending_deletes_'+(currentUser?currentUser.uid:'guest');}
 function loadTasks(){
-  // Chỉ dùng làm bộ nhớ đệm tạm (offline/khởi động nhanh) — nguồn dữ liệu thật
-  // nằm trên Firestore và được đồng bộ qua subscribeCloudTasks().
+  // localStorage là bộ nhớ đệm — nhưng đồng thời cũng là "outbox" giữ những
+  // nhiệm vụ chưa chắc đã lên tới Firestore (pendingSync=true). Không phụ
+  // thuộc vào enablePersistence/IndexedDB (không đáng tin cậy trên một số
+  // máy, đặc biệt PWA ghim màn hình chính iOS) — localStorage ghi đồng bộ
+  // nên gần như luôn còn nguyên sau khi tắt bật app hoặc F5.
   try{
     const raw=localStorage.getItem(tasksStorageKey());
     tasks=raw?JSON.parse(raw):[];
@@ -2505,7 +2509,28 @@ function loadTasks(){
 function cacheTasksLocally(){
   try{localStorage.setItem(tasksStorageKey(),JSON.stringify(tasks));}catch(e){}
 }
+function getPendingDeleteIds(){
+  try{
+    const raw=localStorage.getItem(tasksDeletesKey());
+    const arr=raw?JSON.parse(raw):[];
+    return Array.isArray(arr)?arr:[];
+  }catch(e){return[];}
+}
+function addPendingDeleteId(id){
+  try{
+    const ids=getPendingDeleteIds();
+    if(!ids.includes(id))ids.push(id);
+    localStorage.setItem(tasksDeletesKey(),JSON.stringify(ids));
+  }catch(e){}
+}
+function clearPendingDeleteId(id){
+  try{
+    const ids=getPendingDeleteIds().filter(x=>x!==id);
+    localStorage.setItem(tasksDeletesKey(),JSON.stringify(ids));
+  }catch(e){}
+}
 function saveTasks(changedTask){
+  if(changedTask)changedTask.pendingSync=true;
   cacheTasksLocally();
   if(changedTask)uploadTaskToCloud(changedTask);
 }
@@ -2522,17 +2547,33 @@ async function uploadTaskToCloud(task){
       createdAt:task.createdAt||Date.now(),
       updatedAt:firebase.firestore.FieldValue.serverTimestamp()
     });
+    // Ghi thành công lên cloud — bỏ cờ "đang chờ đồng bộ" cho đúng nhiệm vụ
+    // này (tìm lại theo id, vì trong lúc chờ mạng, tasks có thể đã bị thay
+    // bằng dữ liệu gộp mới từ subscribeCloudTasks()).
+    const t=tasks.find(x=>x.id===task.id);
+    if(t){t.pendingSync=false;cacheTasksLocally();}
   }catch(e){
     console.error(e);
     showToast('Lỗi đồng bộ nhiệm vụ ('+(e.code||e.message||'không rõ')+')');
+    // Giữ nguyên pendingSync=true để lần retryPendingTaskSync() kế tiếp
+    // (mở lại app, quay lại foreground, có mạng trở lại...) sẽ thử lại.
   }
 }
 function deleteTaskFromCloud(id){
   if(!currentUser||!db)return;
-  db.collection('tasks').doc(id).delete().catch(e=>{
+  db.collection('tasks').doc(id).delete().then(()=>{
+    clearPendingDeleteId(id);
+  }).catch(e=>{
     console.error(e);
     showToast('Lỗi xoá nhiệm vụ trên cloud ('+(e.code||e.message||'không rõ')+')');
+    // Giữ id trong danh sách "chờ xoá" để không bị dữ liệu cloud cũ (chưa kịp
+    // xoá) hồi sinh lại nhiệm vụ này khi gộp dữ liệu, và để thử xoá lại sau.
   });
+}
+function retryPendingTaskSync(){
+  if(!currentUser||!db)return;
+  tasks.filter(t=>t.pendingSync).forEach(t=>uploadTaskToCloud(t));
+  getPendingDeleteIds().forEach(id=>deleteTaskFromCloud(id));
 }
 let tasksUnsub=null;
 function subscribeCloudTasks(){
@@ -2540,17 +2581,35 @@ function subscribeCloudTasks(){
   if(!currentUser||!db)return;
   tasksUnsub=db.collection('tasks').where('ownerUid','==',currentUser.uid)
     .onSnapshot(snap=>{
-      tasks=snap.docs.map(d=>{
+      const pendingDeleteIds=getPendingDeleteIds();
+      const cloudTasks=snap.docs.map(d=>{
         const t=d.data();
         return{
           id:d.id,text:t.text||'',startDate:t.startDate||null,endDate:t.endDate||null,
           doneDates:Array.isArray(t.doneDates)?t.doneDates:[],
           colorIndex:typeof t.colorIndex==='number'?t.colorIndex:undefined,
-          createdAt:t.createdAt||Date.now()
+          createdAt:t.createdAt||Date.now(),
+          pendingSync:false
         };
-      }).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      }).filter(t=>!pendingDeleteIds.includes(t.id));
+      // GỘP thay vì ghi đè: dữ liệu cloud là nền, nhưng bất kỳ nhiệm vụ nào
+      // đang pendingSync ở máy này (vừa thêm/sửa, có thể chưa kịp lên cloud
+      // do mất mạng hoặc vừa tắt bật/F5 giữa chừng) luôn được giữ lại —
+      // dùng bản trên máy thay vì bản cloud có thể cũ hơn, và không bao giờ
+      // bị xoá mất khỏi danh sách chỉ vì cloud chưa thấy nó.
+      const merged=cloudTasks.slice();
+      tasks.forEach(localT=>{
+        if(!localT.pendingSync)return;
+        if(pendingDeleteIds.includes(localT.id))return;
+        const idx=merged.findIndex(x=>x.id===localT.id);
+        if(idx>=0)merged[idx]=localT;
+        else merged.push(localT);
+      });
+      merged.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      tasks=merged;
       cacheTasksLocally();
       if(document.getElementById('s-tasks').classList.contains('active'))renderTasksScreen();
+      retryPendingTaskSync();
     },e=>{
       console.error(e);
       showToast('Lỗi đồng bộ nhiệm vụ ('+(e.code||e.message||'không rõ')+')');
@@ -2577,7 +2636,7 @@ function addTask(){
   const startDate=startInp&&startInp.value?startInp.value:null;
   const endDate=endInp&&endInp.value?endInp.value:null;
   if(startDate&&endDate&&endDate<startDate){showToast('Ngày kết thúc phải sau ngày bắt đầu');return;}
-  const newTask={id:'t'+Date.now()+Math.random().toString(36).slice(2,6),text,startDate,endDate,doneDates:[],createdAt:Date.now()};
+  const newTask={id:'t'+Date.now()+Math.random().toString(36).slice(2,6),text,startDate,endDate,doneDates:[],createdAt:Date.now(),pendingSync:true};
   tasks.unshift(newTask);
   taskAddOpen=false;
   saveTasks(newTask);
@@ -2607,6 +2666,7 @@ function deleteTask(id){
   const name=t?t.text.replace(/</g,'&lt;'):'nhiệm vụ này';
   if(!confirm(`Xoá "${name}"? Toàn bộ chuỗi ngày đã hoàn thành sẽ bị mất.`))return;
   tasks=tasks.filter(x=>x.id!==id);
+  addPendingDeleteId(id);
   cacheTasksLocally();
   deleteTaskFromCloud(id);
   renderTasksScreen();
@@ -3129,6 +3189,9 @@ if(auth){
     if(document.getElementById('s-gallery').classList.contains('active'))renderGallery();
     subscribeCloudPhotos();
     subscribeCloudTasks();
+    // Thử đẩy lại ngay bất kỳ nhiệm vụ/lần xoá nào còn dở dang từ phiên
+    // trước (app bị tắt/F5 giữa lúc đang lưu) — không cần chờ onSnapshot.
+    retryPendingTaskSync();
   });
 }else{
   document.getElementById('login-screen').classList.add('hide');
@@ -3172,6 +3235,12 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(!document.hidden&&swReg)swReg.update().catch(()=>{});
     });
   }
+  // Quay lại app (mở lại tab/app đã ghim) hoặc có mạng trở lại — thử đẩy lại
+  // mọi thay đổi nhiệm vụ còn "đang chờ đồng bộ" trong outbox localStorage.
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden)retryPendingTaskSync();
+  });
+  window.addEventListener('online',retryPendingTaskSync);
 });
 </script>
 </body>
