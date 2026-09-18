@@ -398,6 +398,22 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .task-edit-active{color:var(--accent)!important;opacity:1!important}
 .task-date-edit-hint{font-size:11px;color:var(--accent);margin:4px 0 -4px 2px;opacity:0.85}
 .task-total-done{display:inline-block;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-dim);border-radius:8px;padding:2px 7px;margin-left:6px;vertical-align:middle}
+.reminder-section-title{font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin:14px 0 8px}
+.reminder-toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:14px;padding:12px 16px;margin-bottom:10px}
+.reminder-toggle-label{font-size:14px;font-weight:600}
+.reminder-toggle-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.toggle-switch{width:44px;height:26px;border-radius:13px;background:var(--border);border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.toggle-switch.on{background:var(--accent)}
+.toggle-switch::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.toggle-switch.on::after{transform:translateX(18px)}
+.reminder-time-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:14px;padding:12px 16px;margin-bottom:10px}
+.reminder-time-label{flex:1;font-size:14px;font-weight:600}
+.reminder-time-input{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 12px;font-size:14px;font-weight:600;color:var(--text);font-family:inherit;outline:none;color-scheme:light dark;width:110px;text-align:center}
+.reminder-task-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.reminder-task-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:12px;padding:10px 14px}
+.reminder-task-name{flex:1;font-size:13px;font-weight:500}
+.reminder-note{font-size:11.5px;color:var(--text3);line-height:1.5;text-align:center;padding:10px 4px 4px}
+.reminder-save-btn{width:100%;padding:13px;border-radius:14px;background:var(--accent);color:#fff;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px}
 .task-del{flex-shrink:0;background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:4px}
 .task-edit{flex-shrink:0;background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:4px}
 .task-days-row{display:flex;justify-content:space-between;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
@@ -514,6 +530,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 
   <div class="screen" id="s-stats"></div>
   <div class="screen" id="s-tasks"></div>
+  <div class="screen" id="s-settings" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 14px calc(var(--safe-bottom) + 80px)"></div>
 
   <button class="fab-add" id="fab-add" onclick="openFabSheet()">+</button>
 
@@ -553,7 +570,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
       </div>
       <div class="nav-label" id="navl-tasks">Nhiệm vụ</div>
     </div>
-    <div class="nav-item" onclick="openSettings()">
+    <div class="nav-item" onclick="switchTab('settings')">
       <div class="nav-icon" id="nav-settings" style="font-size:18px">⚙️</div>
       <div class="nav-label" id="navl-settings">Cài đặt</div>
     </div>
@@ -588,23 +605,15 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   </div>
 </div>
 
-<div id="settings-modal" class="cal-modal">
+
+
+<div id="reminder-modal" class="cal-modal">
   <div class="cal-sheet">
     <div class="cal-header">
-      <div class="cal-title">⚙️ Cài đặt</div>
-      <button class="cal-nav-btn" onclick="closeSettings()">✕</button>
+      <div class="cal-title">🔔 Nhắc nhở nhiệm vụ</div>
+      <button class="cal-nav-btn" onclick="closeReminderSettings()">✕</button>
     </div>
-    <div class="fr-me" id="settings-me"></div>
-    <div class="fr-add-row" id="settings-name-row">
-      <input type="text" id="settings-name-input" placeholder="Nhập tên hiển thị của bạn" maxlength="30">
-      <button onclick="saveDisplayNameFromInput()">Lưu</button>
-    </div>
-    <div class="fab-sheet-list" id="settings-list"></div>
-    <div class="fr-section-title">Giao diện</div>
-    <div class="theme-picker-box" id="settings-theme-list"></div>
-    <div class="cal-actions">
-      <button class="cal-close-btn" style="flex:1;color:#ef4444" onclick="signOutUser()">Đăng xuất</button>
-    </div>
+    <div id="reminder-body"></div>
   </div>
 </div>
 
@@ -1394,7 +1403,7 @@ function setGalleryView(mode){galleryViewMode=mode;renderGallery();}
 function toggleAmountsHidden(){
   amountsHidden=!amountsHidden;
   renderGallery();
-  if(document.getElementById('settings-modal').classList.contains('open'))renderSettingsUI();
+  if(document.getElementById('s-settings').classList.contains('active'))renderSettingsUI();
 }
 function maskAmount(str){return amountsHidden?'••••••':str;}
 
@@ -1419,9 +1428,7 @@ function renderGallery(){
       <div class="gh-greet">${greet} ${emoji}</div>
       <div class="gh-name">${getDisplayName()||(currentUser&&currentUser.displayName)||'Đặt tên trong Cài đặt'}</div>
     </div>
-  </div>
-  <div class="gh-status-row">
-    <div class="gh-pill ${todayExpense>0?'warn':'good'}">${todayExpense>0?`🧾 Hôm nay đã chi ${formatVND(todayExpense)}`:'🌿 Hôm nay chưa chi tiêu'}</div>
+    <div class="gh-pill ${todayExpense>0?'warn':'good'}" style="flex-shrink:0">${todayExpense>0?`🧾 Hôm nay đã chi ${formatVND(todayExpense)}`:'🌿 Hôm nay chưa chi tiêu'}</div>
   </div>
   <div class="gh-toggle-row">
     <div class="gh-toggle-group">
@@ -1910,38 +1917,174 @@ function closeMonthPhotoList(){
 }
 
 
-function openSettings(){document.getElementById('settings-modal').classList.add('open');renderSettingsUI();}
-function closeSettings(){document.getElementById('settings-modal').classList.remove('open');}
-function renderSettingsUI(){
-  const meEl=document.getElementById('settings-me');
-  if(meEl){
-    if(currentUser){
-      meEl.innerHTML=`${currentUser.photoURL?`<img src="${currentUser.photoURL}" alt="">`:''}<div class="fr-me-info"><strong>${currentUser.displayName||''}</strong>${currentUser.email||''}</div>`;
-    }else{
-      meEl.innerHTML='<div class="fr-me-info"><strong>Chưa đăng nhập</strong></div>';
-    }
-  }
-  const input=document.getElementById('settings-name-input');
-  if(input&&document.activeElement!==input)input.value=getDisplayName();
-  const listEl=document.getElementById('settings-list');
-  if(listEl){
-    const current=getTheme();
-    listEl.innerHTML=`
-      <div class="fab-sheet-item" onclick="closeSettings();exportPhotos()"><div class="fab-sheet-icon" style="background:var(--accent-dim);color:var(--accent)">💾</div><div><strong>Xuất dữ liệu</strong><span>Tải ảnh &amp; giao dịch của bạn về máy (JSON)</span></div></div>
-      <div class="fab-sheet-item" onclick="toggleAmountsHidden()"><div class="fab-sheet-icon" style="background:var(--surface2);color:var(--text)">${amountsHidden?'🙈':'👁️'}</div><div><strong>${amountsHidden?'Hiện số tiền':'Ẩn số tiền'}</strong><span>Áp dụng cho Nhật ký, Thống kê, Phân tích</span></div></div>
-    `;
-    const themeEl=document.getElementById('settings-theme-list');
-    if(themeEl){
-      themeEl.innerHTML=Object.keys(THEMES).map(id=>{
-        const th=THEMES[id];
-        return`<button class="theme-swatch-btn${id===current?' active':''}" onclick="setTheme('${id}')" title="${th.desc}">
-          <div class="theme-swatch-circle" style="background:linear-gradient(135deg,${th.swatch[1]},${th.swatch[2]})">${id===current?'<span class="theme-swatch-check">✓</span>':''}</div>
-          <div class="theme-swatch-label">${th.icon} ${th.label}</div>
-        </button>`;
-      }).join('');
-    }
-  }
+function openSettings(){switchTab('settings');}
+function closeSettings(){}
+
+/* ====== REMINDER SETTINGS ====== */
+const REMINDER_KEY='th_reminder_cfg';
+function loadReminderCfg(){
+  try{return JSON.parse(localStorage.getItem(REMINDER_KEY))||{};}catch(e){return{};}
 }
+function saveReminderCfg(cfg){try{localStorage.setItem(REMINDER_KEY,JSON.stringify(cfg));}catch(e){}}
+function getReminderSummary(){
+  const cfg=loadReminderCfg();
+  if(!cfg.enabled)return'Đang tắt';
+  return`Bật · ${cfg.time||'20:00'} mỗi ngày`;
+}
+function openReminderSettings(){
+  document.getElementById('reminder-modal').classList.add('open');
+  renderReminderUI();
+}
+function closeReminderSettings(){
+  document.getElementById('reminder-modal').classList.remove('open');
+  renderSettingsUI();
+}
+function renderReminderUI(){
+  const cfg=loadReminderCfg();
+  const enabled=!!cfg.enabled;
+  const time=cfg.time||'20:00';
+  const taskReminders=cfg.taskReminders||{};
+  const hasPerm='Notification' in window;
+  const perm=hasPerm?Notification.permission:'denied';
+  const taskRows=tasks.map(t=>{
+    const on=taskReminders[t.id]!==false;
+    return`<div class="reminder-task-row">
+      <span class="reminder-task-name">${t.text.replace(/</g,'&lt;')}</span>
+      <button class="toggle-switch${on?' on':''}" onclick="toggleReminderTask('${t.id}')" id="rtr-${t.id}"></button>
+    </div>`;
+  }).join('')||'<div class="reminder-note">Chưa có nhiệm vụ nào</div>';
+  document.getElementById('reminder-body').innerHTML=`
+    <div class="reminder-toggle-row">
+      <div><div class="reminder-toggle-label">Bật nhắc nhở</div><div class="reminder-toggle-sub">Thông báo hàng ngày nhắc hoàn thành nhiệm vụ</div></div>
+      <button class="toggle-switch${enabled?' on':''}" id="reminder-master-toggle" onclick="toggleReminderMaster()"></button>
+    </div>
+    <div id="reminder-detail" style="${enabled?'':'opacity:0.4;pointer-events:none'}">
+      <div class="reminder-time-row">
+        <div class="reminder-time-label">⏰ Giờ nhắc</div>
+        <input type="time" class="reminder-time-input" id="reminder-time-input" value="${time}">
+      </div>
+      <div class="reminder-section-title">Nhắc cho nhiệm vụ</div>
+      <div class="reminder-task-list">${taskRows}</div>
+    </div>
+    ${perm==='denied'?`<div class="reminder-note">⚠️ Trình duyệt đang chặn thông báo. Vào cài đặt trình duyệt để cấp quyền.</div>`:''}
+    ${!hasPerm?`<div class="reminder-note">Trình duyệt này không hỗ trợ thông báo.</div>`:''}
+    <button class="reminder-save-btn" onclick="saveReminderSettings()">Lưu cài đặt</button>
+    <div class="reminder-note">Nhắc nhở chỉ hoạt động khi trang web đang mở hoặc PWA đang chạy nền.</div>
+  `;
+}
+function toggleReminderMaster(){
+  const cfg=loadReminderCfg();
+  cfg.enabled=!cfg.enabled;
+  saveReminderCfg(cfg);
+  renderReminderUI();
+}
+function toggleReminderTask(id){
+  const cfg=loadReminderCfg();
+  if(!cfg.taskReminders)cfg.taskReminders={};
+  cfg.taskReminders[id]=cfg.taskReminders[id]===false?true:false;
+  saveReminderCfg(cfg);
+  const btn=document.getElementById('rtr-'+id);
+  if(btn)btn.classList.toggle('on',cfg.taskReminders[id]!==false);
+}
+function saveReminderSettings(){
+  const cfg=loadReminderCfg();
+  const timeInp=document.getElementById('reminder-time-input');
+  if(timeInp)cfg.time=timeInp.value||'20:00';
+  saveReminderCfg(cfg);
+  if(cfg.enabled&&'Notification' in window&&Notification.permission==='default'){
+    Notification.requestPermission().then(p=>{
+      if(p==='granted'){showToast('✅ Đã bật nhắc nhở lúc '+cfg.time);scheduleReminders();}
+      else showToast('⚠️ Cần cấp quyền thông báo để nhắc nhở hoạt động');
+    });
+  }else{
+    if(cfg.enabled)scheduleReminders();
+    else clearReminderTimer();
+    showToast(cfg.enabled?'✅ Đã lưu · Nhắc lúc '+cfg.time:'🔕 Đã tắt nhắc nhở');
+  }
+  closeReminderSettings();
+}
+let reminderTimer=null;
+function clearReminderTimer(){if(reminderTimer){clearTimeout(reminderTimer);reminderTimer=null;}}
+function scheduleReminders(){
+  clearReminderTimer();
+  const cfg=loadReminderCfg();
+  if(!cfg.enabled)return;
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const [h,m]=(cfg.time||'20:00').split(':').map(Number);
+  const now=new Date();
+  const next=new Date(now);
+  next.setHours(h,m,0,0);
+  if(next<=now)next.setDate(next.getDate()+1);
+  const ms=next-now;
+  reminderTimer=setTimeout(()=>{
+    fireReminderNotification();
+    scheduleReminders();
+  },ms);
+}
+function fireReminderNotification(){
+  const cfg=loadReminderCfg();
+  if(!cfg.enabled)return;
+  const today=toDateStr(new Date());
+  const taskReminders=cfg.taskReminders||{};
+  const pending=tasks.filter(t=>{
+    if(t.endDate&&today>t.endDate)return false;
+    if(t.startDate&&today<t.startDate)return false;
+    if(taskReminders[t.id]===false)return false;
+    return!t.doneDates.includes(today);
+  });
+  if(!pending.length)return;
+  const body=pending.length===1
+    ?`"${pending[0].text}" chưa hoàn thành hôm nay!`
+    :`${pending.length} nhiệm vụ chưa hoàn thành: ${pending.map(t=>t.text).join(', ')}`;
+  try{new Notification('🔥 Nhắc nhiệm vụ hôm nay',{body,icon:'icon-192.png',badge:'icon-192.png'});}catch(e){}
+}
+function renderSettingsUI(){
+  const el=document.getElementById('s-settings');
+  if(!el)return;
+  const current=getTheme();
+  const userName=currentUser?(currentUser.displayName||''):'';
+  const userEmail=currentUser?(currentUser.email||''):'';
+  const userPhoto=currentUser&&currentUser.photoURL?`<img src="${currentUser.photoURL}" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0">`:'<div style="width:48px;height:48px;border-radius:50%;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">👤</div>';
+  const themeSwatches=Object.keys(THEMES).map(id=>{
+    const th=THEMES[id];
+    return`<button class="theme-swatch-btn${id===current?' active':''}" onclick="setTheme('${id}')" title="${th.desc}">
+      <div class="theme-swatch-circle" style="background:linear-gradient(135deg,${th.swatch[1]},${th.swatch[2]})">${id===current?'<span class="theme-swatch-check">✓</span>':''}</div>
+      <div class="theme-swatch-label">${th.icon} ${th.label}</div>
+    </button>`;
+  }).join('');
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px">
+      <div class="fr-section-title" style="margin:0">Tài khoản</div>
+      <button onclick="exportPhotos()" title="Xuất dữ liệu" style="width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0">💾</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:16px;padding:14px 16px;margin-bottom:10px">
+      ${userPhoto}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${userName||'Chưa đăng nhập'}</div>
+        <div style="font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${userEmail}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;background:var(--surface);border-radius:16px;padding:10px 14px;margin-bottom:4px;align-items:center">
+      <input type="text" id="settings-name-input" placeholder="Tên hiển thị của bạn" maxlength="30" value="${getDisplayName()}" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13.5px;color:var(--text);font-family:inherit;outline:none">
+      <button onclick="saveDisplayNameFromInput()" style="flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Lưu</button>
+    </div>
+
+    <div class="fr-section-title" style="margin-top:16px">Chức năng</div>
+    <div class="fab-sheet-list" style="background:var(--surface);border-radius:16px;overflow:hidden;padding:0">
+      <div class="fab-sheet-item" onclick="openReminderSettings()"><div class="fab-sheet-icon" style="background:rgba(251,191,36,0.15);color:#f59e0b">🔔</div><div><strong>Nhắc nhở nhiệm vụ</strong><span>${getReminderSummary()}</span></div></div>
+    </div>
+
+    <div class="fr-section-title" style="margin-top:16px">Giao diện</div>
+    <div class="theme-picker-box">${themeSwatches}</div>
+
+    <div style="margin-top:20px">
+      <button onclick="signOutUser()" style="width:100%;padding:13px;border-radius:14px;background:rgba(239,68,68,0.12);color:#ef4444;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">Đăng xuất</button>
+    </div>
+  `;
+}
+
+function openSettings(){switchTab('settings');}
+function closeSettings(){}
 
 function switchTab(tab,skipAutoStart){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -1952,12 +2095,15 @@ function switchTab(tab,skipAutoStart){
   document.getElementById('navl-stats')?.classList.toggle('active',tab==='stats');
   document.getElementById('nav-tasks')?.classList.toggle('active',tab==='tasks');
   document.getElementById('navl-tasks')?.classList.toggle('active',tab==='tasks');
+  document.getElementById('nav-settings')?.classList.toggle('active',tab==='settings');
+  document.getElementById('navl-settings')?.classList.toggle('active',tab==='settings');
   const fab=document.getElementById('fab-add');
   if(fab)fab.style.display=tab==='gallery'?'flex':'none';
   if(tab==='camera'){if(!stream&&!skipAutoStart)startCamera();}
   else if(tab==='gallery')renderGallery();
   else if(tab==='stats')renderStats();
   else if(tab==='tasks')renderTasksScreen();
+  else if(tab==='settings')renderSettingsUI();
 }
 function openFabSheet(){document.getElementById('fab-sheet-modal').classList.add('open');}
 function closeFabSheet(){document.getElementById('fab-sheet-modal').classList.remove('open');}
@@ -2684,6 +2830,7 @@ document.addEventListener('keydown',(e)=>{
 document.addEventListener('DOMContentLoaded',()=>{
   applyTheme(getTheme());
   switchTab('gallery');
+  scheduleReminders();
   if(isStandalonePWA()){
     const hint=document.getElementById('login-safari-hint');
     if(hint)hint.style.display='block';
