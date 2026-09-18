@@ -391,6 +391,8 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .task-day.done .tdd-dot{background:var(--tc,#8B9DE0);border-color:transparent;color:#fff}
 .task-day.today .tdd-dot{box-shadow:0 0 0 2px var(--accent-dim)}
 .task-day.future .tdd-dot{background:transparent;border-style:dashed;border-color:var(--border);color:var(--text3);font-size:10px}
+.task-day:not(.done):not(.future):not(.today) .tdd-dot{background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.35);color:#ef4444;font-size:10px}
+.task-day.today:not(.done) .tdd-dot{background:rgba(239,68,68,0.10);border-color:rgba(239,68,68,0.4);color:#ef4444;font-size:10px}
 .task-del{flex-shrink:0;background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:4px}
 .task-edit{flex-shrink:0;background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:4px}
 .task-days-row{display:flex;justify-content:space-between;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
@@ -2371,7 +2373,7 @@ function renderTasksScreen(){
       if(isDone)cls+=' done';
       if(isToday)cls+=' today';
       if(isFuture)cls+=' future';
-      const dot=isFuture?d.getDate():'✓';
+      const dot=isFuture?d.getDate():(isDone?'✓':'✕');
       days+=`<div class="${cls}"><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
     });
     const rowCls='task-days-row'+(displayDates.length>7?' scrollable':'');
