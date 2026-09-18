@@ -12,7 +12,7 @@
 (function(){
   try{
     var t=localStorage.getItem('th_theme');
-    var metaColors={warm:'#FBEEDC',peach:'#FFF0F3',white:'#FFFFFF',mint:'#EAF6EC'};
+    var metaColors={warm:'#FBEEDC',peach:'#FFF0F3',white:'#FFFFFF',mint:'#EEF7F0'};
     if(t&&metaColors[t]){
       document.documentElement.setAttribute('data-theme',t);
       var m=document.getElementById('meta-theme-color');
@@ -32,7 +32,7 @@
 :root[data-theme="warm"]{--bg:#FBEEDC;--surface:#FFFFFF;--surface2:#FFF6E8;--border:#EAD6B0;--accent:#F5A623;--accent2:#FF7A45;--accent-rgb:245,166,35;--accent2-rgb:255,122,69;--accent-dim:rgba(245,166,35,0.16);--text:#2E2010;--text2:#5E3F25;--text3:#956B3E;--nav-bg:rgba(255,255,255,0.9);--card-shadow:rgba(120,90,40,0.18)}
 :root[data-theme="peach"]{--bg:#FFF0F3;--surface:#FFFFFF;--surface2:#FFE4EC;--border:#FFCBDA;--accent:#FF8FAB;--accent2:#FFB4A2;--accent-rgb:255,143,171;--accent2-rgb:255,180,162;--accent-dim:rgba(255,143,171,0.16);--text:#3D1E28;--text2:#7A3F50;--text3:#B86878;--nav-bg:rgba(255,255,255,0.9);--card-shadow:rgba(255,143,171,0.2)}
 :root[data-theme="white"]{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F5F6F8;--border:#E4E6EA;--accent:#2563EB;--accent2:#0EA5E9;--accent-rgb:37,99,235;--accent2-rgb:14,165,233;--accent-dim:rgba(37,99,235,0.1);--text:#111318;--text2:#5B6270;--text3:#9AA1AC;--nav-bg:rgba(255,255,255,0.92);--card-shadow:rgba(20,20,30,0.08)}
-:root[data-theme="mint"]{--bg:#EAF6EC;--surface:#FFFFFF;--surface2:#F1FAF4;--border:#CFEAD6;--accent:#5FB88A;--accent2:#8FD9B4;--accent-rgb:95,184,138;--accent2-rgb:143,217,180;--accent-dim:rgba(95,184,138,0.16);--text:#1E3B2A;--text2:#4C7A5E;--text3:#7FA994;--nav-bg:rgba(255,255,255,0.9);--card-shadow:rgba(95,184,138,0.2)}
+:root[data-theme="mint"]{--bg:#EEF7F0;--surface:#FFFFFF;--surface2:#F5FAF6;--border:#DDEAE1;--accent:#4CA97C;--accent2:#7FCBA4;--accent-rgb:76,169,124;--accent2-rgb:127,203,164;--accent-dim:rgba(76,169,124,0.13);--text:#20362B;--text2:#5B7268;--text3:#94A69C;--nav-bg:rgba(255,255,255,0.92);--card-shadow:rgba(76,169,124,0.14)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:'Be Vietnam Pro',-apple-system,sans-serif;overflow:hidden;position:fixed;display:flex;justify-content:center}
 #app{width:100%;max-width:480px;height:100%;display:flex;flex-direction:column;box-shadow:0 0 40px var(--card-shadow);position:relative}
@@ -838,7 +838,7 @@ const THEMES={
   warm:{label:'Yellow',desc:'Nền kem sáng, nhấn cam vàng',icon:'🧡',metaColor:'#FBEEDC',swatch:['#FBEEDC','#F5A623','#FF7A45']},
   peach:{label:'Pink',desc:'Nền hồng phấn nhạt, nhấn hồng đào dễ thương',icon:'🌸',metaColor:'#FFF0F3',swatch:['#FFF0F3','#FF8FAB','#FFB4A2']},
   white:{label:'White',desc:'Nền trắng tinh gọn, nhấn xanh dương hiện đại',icon:'⚪',metaColor:'#FFFFFF',swatch:['#FFFFFF','#2563EB','#0EA5E9']},
-  mint:{label:'Mint',desc:'Nền xanh lá pastel dịu mắt, nhấn xanh mint tươi mát',icon:'🌿',metaColor:'#EAF6EC',swatch:['#EAF6EC','#5FB88A','#8FD9B4']}
+  mint:{label:'Mint',desc:'Nền xanh lá pastel dịu mắt, nhấn xanh mint tươi mát',icon:'🌿',metaColor:'#EEF7F0',swatch:['#EEF7F0','#4CA97C','#7FCBA4']}
 };
 function getTheme(){
   try{const t=localStorage.getItem(THEME_KEY);return THEMES[t]?t:'dark';}catch(e){return 'dark';}
