@@ -326,7 +326,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .cal-modal.open{display:flex}
 .cal-sheet{background:var(--surface);width:100%;max-width:440px;border-radius:24px 24px 0 0;padding:18px 18px calc(var(--safe-bottom) + 18px);animation:calUp .22s ease}
 @keyframes calUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
-.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
 .cal-nav-btn{width:32px;height:32px;border-radius:50%;border:none;background:var(--accent-dim);color:var(--accent);font-size:17px;cursor:pointer;font-family:inherit;line-height:1}
 .cal-title{font-size:15px;font-weight:600;color:var(--text)}
 .cal-streak-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:14px;padding:10px 14px;margin-bottom:14px}
@@ -493,10 +493,10 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 </div>
 
 <div id="analysis-modal" class="cal-modal">
-  <div class="cal-sheet" style="max-height:88vh;overflow-y:auto">
+  <div class="cal-sheet" style="max-height:80vh;overflow-y:auto">
     <div class="cal-header">
-      <div class="cal-title">📈 Phân tích chi tiêu</div>
       <button class="cal-nav-btn" onclick="closeAnalysis()">✕</button>
+      <div class="cal-title" style="flex:1">📈 Phân tích chi tiêu</div>
     </div>
     <div id="analysis-body"></div>
   </div>
