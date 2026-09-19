@@ -1938,14 +1938,14 @@ function openDaySummary(dateStr){
   const totalEl=document.getElementById('ds-total');
   if(dayExpense>0&&dayIncome===0){
     totalEl.className='ds-total expense';
-    totalEl.textContent=`↗ ${maskAmount(formatVND(dayExpense))}đ`;
+    totalEl.textContent=`↗ ${maskAmount(formatVND(dayExpense))}`;
   }else if(dayIncome>0&&dayExpense===0){
     totalEl.className='ds-total income';
-    totalEl.textContent=`↙ ${maskAmount(formatVND(dayIncome))}đ`;
+    totalEl.textContent=`↙ ${maskAmount(formatVND(dayIncome))}`;
   }else if(dayExpense>0||dayIncome>0){
     const net=dayIncome-dayExpense;
     totalEl.className=`ds-total ${net<0?'expense':net>0?'income':'mixed'}`;
-    totalEl.textContent=`${net<0?'↗':'↙'} ${maskAmount(formatVND(Math.abs(net)))}đ`;
+    totalEl.textContent=`${net<0?'↗':'↙'} ${maskAmount(formatVND(Math.abs(net)))}`;
   }else{
     totalEl.className='ds-total mixed';
     totalEl.textContent='0đ';
@@ -1961,7 +1961,7 @@ function openDaySummary(dateStr){
     return`<div class="ds-card" onclick="closeDaySummary();openViewer('${p.id}')">
       ${imgSrc?`<img src="${imgSrc}" alt="" loading="lazy">`:''}
       <div class="ds-card-pill" style="background:${catColor}">${catLabel}</div>
-      <div class="ds-card-amount">${maskAmount(sign+formatVND(p.amount||0))}đ</div>
+      <div class="ds-card-amount">${maskAmount(sign+formatVND(p.amount||0))}</div>
     </div>`;
   }).join('');
 
@@ -2995,7 +2995,8 @@ function renderTasksScreen(){
   }
 
   if(tasksShowHistory){
-    const sortedByBest=[...tasks].sort((a,b)=>taskBestStreak(b.doneDates)-taskBestStreak(a.doneDates));
+    const sortedByBest=[...tasks].filter(t=>t.doneDates&&t.doneDates.length>0&&t.endDate&&today>t.endDate).sort((a,b)=>taskBestStreak(b.doneDates)-taskBestStreak(a.doneDates));
+    if(!sortedByBest.length){html+='<div class="task-empty">Chưa có nhiệm vụ đã kết thúc nào.<br><span style="font-size:12px;color:var(--text3)">Nhiệm vụ sẽ xuất hiện ở đây sau khi hết hạn.</span></div>';el.innerHTML=html;return;}
     html+=sortedByBest.map(t=>{
       const runs=taskStreakRuns(t.doneDates);
       const best=taskBestStreak(t.doneDates);
