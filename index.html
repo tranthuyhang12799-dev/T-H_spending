@@ -1244,6 +1244,7 @@ function saveManualIncome(){
   renderGallery();
   if(document.getElementById('s-stats').classList.contains('active'))renderStats();
   showToast(`Đã lưu! ${miType==='expense'?'-':'+'}${formatVND(amount)}`);
+  if(miType==='expense')setTimeout(()=>checkBudgetWarning(photo.date,miCategory),400);
   uploadPhotoToCloud(photo);
 }
 
@@ -1447,6 +1448,7 @@ function capturePhoto(){
   updateThumbPreview();
   if(document.getElementById('s-gallery').classList.contains('active'))renderGallery();
   showToast(amount>0?`Đã lưu! 📸 ${finalMoneyType==='expense'?'-':'+'}${formatVND(amount)}`:'Đã lưu! 📸');
+  if(finalMoneyType==='expense'&&amount>0)setTimeout(()=>checkBudgetWarning(photo.date,finalCategory),400);
   uploadPhotoToCloud(photo);
   if(isImg){
     isLibraryPreview=false;
@@ -2566,8 +2568,8 @@ function renderBudgetUI(){
   html+=`<div style="background:var(--surface2);border-radius:14px;padding:14px;margin-bottom:14px">
     <div style="font-size:13px;font-weight:600;margin-bottom:8px">💰 Tổng ngân sách tháng</div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-      <input type="number" inputmode="numeric" id="budget-total-input" placeholder="0đ" value="${totalBudget||''}" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:14px;font-weight:600;color:var(--text);font-family:inherit;outline:none">
-      <button onclick="saveBudgetTotal()" style="flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Lưu</button>
+      <input type="number" inputmode="numeric" id="budget-total-input" placeholder="0đ" value="${totalBudget||''}" disabled style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:14px;font-weight:600;color:var(--text);font-family:inherit;outline:none;opacity:1">
+      <button id="budget-total-btn" onclick="budgetTotalEditOrSave()" style="flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:9px 13px;font-size:16px;cursor:pointer;line-height:1">✏️</button>
     </div>
     ${totalBudget>0?`<div style="font-size:12px;color:var(--text2);margin-bottom:6px">Đã chi: <b style="color:${totalOver?'#ef4444':'var(--text)'}">${formatVND(totalSpent)}</b> / ${formatVND(totalBudget)}</div>
     <div style="height:7px;background:var(--border);border-radius:4px;overflow:hidden"><div style="height:100%;width:${totalPct}%;background:${totalOver?'#ef4444':totalPct>80?'#f59e0b':'#22c55e'};border-radius:4px;transition:width .3s"></div></div>
@@ -2587,8 +2589,8 @@ function renderBudgetUI(){
         ${spent>0?`<span style="font-size:12px;color:var(--text3)">${formatVND(spent)}</span>`:''}
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <input type="number" inputmode="numeric" id="budget-input-${cat.id}" placeholder="Không giới hạn" value="${limit||''}" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 11px;font-size:13px;font-weight:600;color:var(--text);font-family:inherit;outline:none">
-        <button onclick="saveBudgetCat('${cat.id}')" style="flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Lưu</button>
+        <input type="number" inputmode="numeric" id="budget-input-${cat.id}" placeholder="Không giới hạn" value="${limit||''}" disabled style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 11px;font-size:13px;font-weight:600;color:var(--text);font-family:inherit;outline:none;opacity:1">
+        <button id="budget-btn-${cat.id}" onclick="budgetCatEditOrSave('${cat.id}')" style="flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:15px;cursor:pointer;line-height:1">✏️</button>
       </div>
       ${limit>0?`<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--text3);margin-bottom:4px"><span>${pct}% đã dùng</span><span>${over?'<span style="color:#ef4444">Vượt '+formatVND(spent-limit)+'</span>':'Còn '+formatVND(limit-spent)}</span></div><div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${over?'#ef4444':pct>80?'#f59e0b':'#22c55e'};border-radius:3px;transition:width .3s"></div></div></div>`:''}
     </div>`;
@@ -2599,6 +2601,47 @@ function renderBudgetUI(){
   </div>`;
 
   document.getElementById('budget-body').innerHTML=html;
+}
+
+function budgetTotalEditOrSave(){
+  const inp=document.getElementById('budget-total-input');
+  const btn=document.getElementById('budget-total-btn');
+  if(!inp||!btn)return;
+  if(inp.disabled){
+    // Chuyển sang chế độ chỉnh sửa
+    inp.disabled=false;
+    inp.focus();
+    inp.select();
+    btn.textContent='Lưu';
+    btn.style.fontSize='13px';
+    btn.style.fontWeight='600';
+    btn.style.padding='9px 16px';
+  } else {
+    // Lưu
+    saveBudgetTotal();
+  }
+}
+
+function budgetCatEditOrSave(catId){
+  const inp=document.getElementById('budget-input-'+catId);
+  const btn=document.getElementById('budget-btn-'+catId);
+  if(!inp||!btn)return;
+  if(inp.disabled){
+    // Chuyển sang chế độ chỉnh sửa
+    inp.disabled=false;
+    inp.focus();
+    inp.select();
+    btn.textContent='Lưu';
+    btn.style.fontSize='12px';
+    btn.style.fontWeight='600';
+    btn.style.padding='8px 12px';
+    btn.style.background='var(--accent)';
+    btn.style.color='#fff';
+    btn.style.border='none';
+  } else {
+    // Lưu
+    saveBudgetCat(catId);
+  }
 }
 
 function saveBudgetTotal(){
@@ -2631,6 +2674,45 @@ function clearAllBudgets(){
   saveBudgets({});
   showToast('✅ Đã xoá tất cả hạn mức');
   renderBudgetUI();
+}
+
+function checkBudgetWarning(dateStr,catId){
+  const budgets=loadBudgets();
+  if(!Object.keys(budgets).length)return;
+  const monthKey=dateStr?dateStr.slice(0,7):'';
+  if(!monthKey)return;
+  const monthPhotos=photos.filter(p=>p.date.startsWith(monthKey)&&p.moneyType==='expense'&&p.amount>0);
+  const totalSpent=monthPhotos.reduce((s,p)=>s+p.amount,0);
+  const totalBudget=Number(budgets['__total__']||0);
+  const warnings=[];
+
+  // Kiểm tra tổng ngân sách
+  if(totalBudget>0&&totalSpent>=totalBudget){
+    const over=totalSpent-totalBudget;
+    if(over>0)warnings.push(`⚠️ Vượt tổng ngân sách tháng ${formatVND(over)}!`);
+    else warnings.push(`⚠️ Đã chạm tổng ngân sách tháng!`);
+  }else if(totalBudget>0){
+    const pct=Math.round(totalSpent/totalBudget*100);
+    if(pct>=80&&pct<100)warnings.push(`⚠️ Đã dùng ${pct}% tổng ngân sách tháng`);
+  }
+
+  // Kiểm tra hạng mục vừa chi
+  if(catId&&budgets[catId]){
+    const catLimit=Number(budgets[catId]);
+    const catSpent=monthPhotos.filter(p=>p.category===catId).reduce((s,p)=>s+p.amount,0);
+    if(catSpent>=catLimit){
+      const over=catSpent-catLimit;
+      const catName=getCatInfo('expense',catId)?.label||catId;
+      if(over>0)warnings.push(`⚠️ Vượt hạn mức "${catName}" ${formatVND(over)}!`);
+      else warnings.push(`⚠️ Đã chạm hạn mức "${catName}"!`);
+    }else if(catLimit>0){
+      const pct=Math.round(catSpent/catLimit*100);
+      const catName=getCatInfo('expense',catId)?.label||catId;
+      if(pct>=80&&pct<100)warnings.push(`⚠️ Đã dùng ${pct}% hạn mức "${catName}"`);
+    }
+  }
+
+  if(warnings.length)warnings.forEach((w,i)=>setTimeout(()=>showToast(w),i*1800));
 }
 
 // ====== SPENDING ANALYSIS (biểu đồ) ======
