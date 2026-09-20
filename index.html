@@ -2721,16 +2721,27 @@ const AN_COLORS=['#3b82f6','#ef4444','#22c55e','#eab308','#a855f7','#ec4899','#1
 // ====== TASKS (Nhiệm vụ - chuỗi ngày) ======
 let tasks=[];
 const TASK_PALETTE=[
-  {done:'#8B9DE0',soft:'#cfd3e8'},
-  {done:'#EE8FBA',soft:'#f4c2d7'},
-  {done:'#6FCF97',soft:'#cdebd9'},
-  {done:'#F2B265',soft:'#f7ddb8'},
-  {done:'#B18AE0',soft:'#ded0f2'},
-  {done:'#5FC9C0',soft:'#c9ece9'},
-  {done:'#EF8C82',soft:'#f8d2cd'},
-  {done:'#D9B93C',soft:'#f0e3ab'},
-  {done:'#7C93E8',soft:'#d2d9f5'},
-  {done:'#A8C24C',soft:'#e3edc0'}
+  // Đỏ → Hồng
+  {done:'#F47C7C',soft:'#fcd4d4'}, // coral red
+  {done:'#E8A0A0',soft:'#f9d8d8'}, // dusty rose
+  {done:'#EE8FBA',soft:'#f9d0e3'}, // pink
+  {done:'#F2A0D0',soft:'#fde0f0'}, // rose pink
+  // Tím
+  {done:'#C3A0E8',soft:'#ecdefa'}, // soft violet
+  {done:'#B18AE0',soft:'#e2d2f8'}, // lilac purple
+  {done:'#8B9DE0',soft:'#d5dbf5'}, // lavender blue
+  // Xanh dương → Cyan
+  {done:'#60B8F0',soft:'#c8e8fb'}, // sky blue
+  {done:'#5DC8E0',soft:'#beedf8'}, // cyan
+  {done:'#5FC9C0',soft:'#c2ece9'}, // teal
+  // Xanh lá
+  {done:'#7CCFA8',soft:'#c8f0df'}, // seafoam
+  {done:'#6FCF97',soft:'#c6ecd8'}, // mint green
+  {done:'#A8C24C',soft:'#dff0b0'}, // lime green
+  // Vàng → Cam
+  {done:'#D9B93C',soft:'#f5e9b0'}, // golden yellow
+  {done:'#FFB347',soft:'#ffe5b8'}, // light orange
+  {done:'#F2B265',soft:'#fce2be'}, // peach orange
 ];
 function taskColorIndex(id){
   const t=tasks.find(x=>x.id===id);
