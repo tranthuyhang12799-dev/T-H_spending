@@ -1228,9 +1228,20 @@ function saveExpenseEdit(){
 
 // ====== MANUAL ENTRY (thêm thu/chi không cần chụp ảnh, VD: lương chuyển khoản) ======
 let miType='expense',miCategory='other',miLocation=null;
-// Hình đại diện cho khoản chi "Ăn uống" nhập tay (file an uong.png đặt cùng thư mục
-// với index.html trên GitHub; tên file có dấu cách nên viết %20).
-const MANUAL_IMG_AN_UONG='an%20uong.png';
+// Hình đại diện cho khoản chi nhập tay theo từng danh mục (id danh mục → file ảnh).
+// Các file ảnh đặt cùng thư mục với index.html trên GitHub; tên file có dấu cách nên viết %20.
+// Muốn thêm danh mục khác: thêm một dòng vào bảng này.
+const MANUAL_EXPENSE_IMAGES={
+  'an-uong':'an%20uong.png',
+  'di-chuyen':'di%20chuyen.png',
+  'vat-dung-ca-nhan':'vat%20dung%20ca%20nhan.png',
+  'mua-sam':'mua%20sam.png',
+  'xa-giao':'xa%20giao.png',
+  'suc-khoe':'suc%20khoe.png',
+  'giao-duc':'giao%20duc.png',
+  'vo-hinh':'chi%20phi%20vo%20hinh.png',
+  'khac':'khac.png'
+};
 function placeholderImage(type,icon){
   const bg=type==='income'?'#22c55e':'#ef4444';
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="${bg}"/><text x="150" y="168" font-size="130" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">${icon}</text></svg>`;
@@ -1299,7 +1310,7 @@ function saveManualIncome(){
   const caption=document.getElementById('mi-note-input').value.trim();
   const catInfo=getCatInfo(miType,miCategory);
   const id=Date.now().toString();
-  const photo={id,dataUrl:(miType==='expense'&&miCategory==='an-uong')?MANUAL_IMG_AN_UONG:placeholderImage(miType,catInfo.icon),date:dateVal,time:timeVal,caption,amount,moneyType:miType,category:miCategory,location:miLocation,manual:true};
+  const photo={id,dataUrl:(miType==='expense'&&MANUAL_EXPENSE_IMAGES[miCategory])||placeholderImage(miType,catInfo.icon),date:dateVal,time:timeVal,caption,amount,moneyType:miType,category:miCategory,location:miLocation,manual:true};
   photos.unshift(photo);
   updateThumbPreview();
   closeManualIncome();
