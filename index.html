@@ -411,7 +411,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .task-streak.active{color:var(--accent2);font-weight:600}
 .task-check-today{width:26px;height:26px;border-radius:50%;border:2px solid var(--tc-soft,#cfd3e8);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--tc,#a7acc9);background:#fff}
 .task-check-today.done{background:var(--tc,#8B9DE0);border-color:transparent;color:#fff}
-.task-day{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.task-day{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1}
 .tdd-dot{width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid var(--tc-soft,#cfd3e8);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--tc,#a7acc9)}
 .task-day.done .tdd-dot{background:var(--tc,#8B9DE0);border-color:transparent;color:#fff}
 .task-day.today .tdd-dot{box-shadow:0 0 0 2px var(--accent-dim)}
@@ -445,7 +445,8 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .task-days-row.scrollable{justify-content:flex-start;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .task-days-row.scrollable::-webkit-scrollbar{display:none}
 .task-days-row.scrollable .task-day{flex:0 0 30px}
-.tdd-label{font-size:10px;color:var(--text3)}
+.tdd-label{font-size:10px;color:var(--text3);line-height:1}
+.tdd-date{font-size:9px;color:var(--text3);font-weight:600;line-height:1}
 .task-empty{text-align:center;color:var(--text3);font-size:13.5px;padding:30px 10px}
 .task-hist-run{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:10px;padding:8px 12px;margin-top:6px;font-size:13px}
 .task-hist-run .thr-len{font-weight:700;color:var(--accent2)}
@@ -3227,11 +3228,11 @@ function renderTasksScreen(){
         const d=new Date(ds+'T00:00:00');
         const isDone=editSet.has(ds);
         const isFuture=ds>today;
-        const dot=isFuture?d.getDate():(isDone?'✓':'✕');
+        const dot=isFuture?'·':(isDone?'✓':'✕');
         let cls='task-day'+(isDone?' done':'')+(ds===today?' today':'')+(isFuture?' future':'');
         if(!isFuture)cls+=' date-editable';
         const click=isFuture?'':`onclick="toggleTaskDate('${t.id}','${ds}')"`;
-        return`<div class="${cls}" ${click}><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
+        return`<div class="${cls}" ${click}><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span><span class="tdd-date">${d.getDate()}</span></div>`;
       }).join('');
       const editRowCls='task-days-row'+(editDates.length>7?' scrollable':'');
       return`<div class="task-item" style="--tc:${curCol.done};--tc-soft:${curCol.soft}">
@@ -3281,8 +3282,8 @@ function renderTasksScreen(){
       const todayClickable=isToday&&!outOfRange;
       if(todayClickable)cls+=' date-editable';
       const click=todayClickable?`onclick="toggleTaskToday('${t.id}')"`:'';
-      const dot=isFuture?d.getDate():(isDone?'✓':'✕');
-      days+=`<div class="${cls}" ${click}><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span></div>`;
+      const dot=isFuture?'·':(isDone?'✓':'✕');
+      days+=`<div class="${cls}" ${click}><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span><span class="tdd-date">${d.getDate()}</span></div>`;
     });
     const rowCls='task-days-row'+(displayDates.length>7?' scrollable':'');
     const totalDone=t.doneDates.length;
