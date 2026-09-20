@@ -231,6 +231,12 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .ds-scroll::-webkit-scrollbar{display:none}
 .ds-card{flex-shrink:0;width:132px;height:132px;position:relative;border-radius:16px;overflow:hidden;background:#1c1c1f;cursor:pointer}
 .ds-card img{width:100%;height:100%;object-fit:cover;display:block}
+.ds-card-add{flex-shrink:0;width:132px;height:132px;border-radius:16px;border:1.5px dashed rgba(255,255,255,0.35);background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:300;color:#fff;cursor:pointer}
+.ds-sheet{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,0.55);display:none;align-items:flex-end}
+.ds-sheet.open{display:flex}
+.ds-sheet-card{width:100%;background:#1c1c1f;border-radius:20px 20px 0 0;padding:14px 16px calc(var(--safe-bottom) + 16px);display:flex;flex-direction:column;gap:8px}
+.ds-sheet-btn{background:rgba(255,255,255,0.08);border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:600;color:#fff;font-family:inherit;cursor:pointer}
+.ds-sheet-btn.cancel{background:transparent;color:rgba(255,255,255,0.6);font-weight:500}
 .ds-card::after{content:'';position:absolute;left:0;right:0;bottom:0;height:55%;background:linear-gradient(to top,rgba(0,0,0,0.7),transparent);pointer-events:none}
 .ds-card-pill{position:absolute;top:8px;left:8px;font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:20px;color:#fff;z-index:1;white-space:nowrap}
 .ds-card-amount{position:absolute;left:9px;bottom:8px;font-size:13px;font-weight:700;color:#fff;z-index:1}
@@ -734,6 +740,13 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   </div>
   <div class="ds-total" id="ds-total"></div>
   <div class="ds-scroll" id="ds-scroll"></div>
+  <div class="ds-sheet" id="ds-sheet" onclick="closeDsSheet()">
+    <div class="ds-sheet-card" onclick="event.stopPropagation()">
+      <button class="ds-sheet-btn" onclick="dsAddFromLibrary()">🖼️ Chọn ảnh từ máy</button>
+      <button class="ds-sheet-btn" onclick="dsAddManual()">✍️ Tự nhập chi tiêu / thu nhập</button>
+      <button class="ds-sheet-btn cancel" onclick="closeDsSheet()">Huỷ</button>
+    </div>
+  </div>
 </div>
 
 <div id="monthlist">
@@ -1037,10 +1050,15 @@ async function startCamera(){
   }
 }
 
+// Thêm ảnh/chi tiêu cho một ngày đã qua từ màn hình chi tiết ngày (day summary)
+let libraryTargetDate=null; // ngày đích khi chọn ảnh từ máy (null = hôm nay)
+let dsCurrentDate=null;     // ngày đang mở trong day summary
+let dsReturnDate=null;      // nhập tay xong/huỷ thì mở lại day summary của ngày này
 function updateDateChip(){
   const el=document.getElementById('date-chip');
   if(!el)return;
-  const d=new Date();
+  const isLibImg=document.getElementById('video')?.tagName==='IMG';
+  const d=(isLibImg&&libraryTargetDate)?new Date(libraryTargetDate+'T00:00:00'):new Date();
   const days=['CN','T2','T3','T4','T5','T6','T7'];
   el.textContent=`${days[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}`;
 }
@@ -1267,6 +1285,7 @@ function openManualEntry(type,dateStr){
 }
 function closeManualIncome(){
   document.getElementById('manual-income-modal').classList.remove('open');
+  if(dsReturnDate){const ds=dsReturnDate;dsReturnDate=null;openDaySummary(ds);}
 }
 function saveManualIncome(){
   const amountRaw=document.getElementById('mi-amount-input').value.replace(/[^\d]/g,'');
@@ -1371,7 +1390,8 @@ function sizeDataUrlForFirestore(sourceCanvas,maxLen){
   return dataUrl;
 }
 
-function pickFromLibrary(){
+function pickFromLibrary(dateStr){
+  libraryTargetDate=(typeof dateStr==='string'&&dateStr)?dateStr:null;
   document.getElementById('library-file-input').value='';
   document.getElementById('library-file-input').click();
 }
@@ -1390,6 +1410,7 @@ function handleLibraryFile(event){
 // form caption/số tiền/danh mục sẵn có. capturePhoto() sẽ nhận diện phần tử
 // #video là <img> (thay vì <video>) để lưu lại đúng ảnh này khi bấm nút lưu.
 function showLibraryPreview(dataUrl){
+  closeDaySummary();
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
   switchTab('camera',true);
   const wrap=document.getElementById('vf-wrap');
@@ -1438,6 +1459,7 @@ function cancelLibraryPreview(){
   if(shutterBtn)shutterBtn.innerHTML='<div class="shutter-inner"></div>';
   const flipBtn=document.getElementById('flip-btn');
   if(flipBtn)flipBtn.style.visibility='';
+  if(libraryTargetDate){const ds=libraryTargetDate;libraryTargetDate=null;switchTab('gallery');openDaySummary(ds);return;}
   startCamera();
 }
 
@@ -1526,6 +1548,7 @@ function savePhoto(){
   const dataUrl=frozenDataUrl;
   frozenDataUrl=null;
   const isImg=document.getElementById('video')?.tagName==='IMG';
+  const targetDate=(isImg&&libraryTargetDate)?libraryTargetDate:null;
 
   const captionEl=document.getElementById('caption-input');
   const caption=captionEl?captionEl.value.trim():'';
@@ -1541,7 +1564,7 @@ function savePhoto(){
   resetMoneyRow();
   const now=new Date();
   const id=Date.now().toString();
-  const photo={id,dataUrl,date:toDateStr(now),time:customTime||toTimeStr(now),caption,amount,moneyType:finalMoneyType,category:finalCategory,location:finalLocation};
+  const photo={id,dataUrl,date:targetDate||toDateStr(now),time:customTime||toTimeStr(now),caption,amount,moneyType:finalMoneyType,category:finalCategory,location:finalLocation};
   photos.unshift(photo);
   updateThumbPreview();
   if(document.getElementById('s-gallery').classList.contains('active'))renderGallery();
@@ -1560,7 +1583,8 @@ function savePhoto(){
   if(cancelBtn)cancelBtn.remove();
   const moneyRow=document.getElementById('money-row');
   if(moneyRow)moneyRow.style.display='none';
-  startCamera();
+  if(targetDate){libraryTargetDate=null;switchTab('gallery');openDaySummary(targetDate);}
+  else startCamera();
 }
 
 async function uploadPhotoToCloud(photo){
@@ -2073,12 +2097,21 @@ function openDaySummary(dateStr){
       <div class="ds-card-amount">${maskAmount(sign+formatVND(p.amount||0))}</div>
     </div>`;
   }).join('');
-
+  dsCurrentDate=dateStr;
+  // Ngày đã qua (hoặc hôm nay): thêm thẻ "+" để bổ sung ảnh từ máy hoặc tự nhập
+  if(dateStr<=toDateStr(new Date())){
+    scroll.innerHTML+=`<div class="ds-card-add" onclick="openDsSheet()">+</div>`;
+  }
   document.getElementById('daysummary').classList.add('open');
 }
 function closeDaySummary(){
+  closeDsSheet();
   document.getElementById('daysummary').classList.remove('open');
 }
+function openDsSheet(){document.getElementById('ds-sheet').classList.add('open');}
+function closeDsSheet(){const e=document.getElementById('ds-sheet');if(e)e.classList.remove('open');}
+function dsAddFromLibrary(){const ds=dsCurrentDate;closeDsSheet();pickFromLibrary(ds);}
+function dsAddManual(){const ds=dsCurrentDate;closeDsSheet();closeDaySummary();dsReturnDate=ds;openManualEntry(null,ds);}
 
 function openMonthPhotoList(){
   const now=new Date();
