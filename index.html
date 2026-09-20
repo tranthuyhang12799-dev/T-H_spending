@@ -3274,19 +3274,6 @@ function renderTasksScreen(){
       const curIdx=editingColorIndex!=null?editingColorIndex:taskColorIndex(t.id);
       const curCol=TASK_PALETTE[curIdx];
       const swatches=TASK_PALETTE.map((c,i)=>`<div class="task-color-swatch${i===curIdx?' selected':''}" style="background:${c.done}" onclick="selectEditColor(${i})"></div>`).join('');
-      const editDates=taskDisplayDates(t);
-      const editSet=new Set(t.doneDates);
-      const editDots=editDates.map(ds=>{
-        const d=new Date(ds+'T00:00:00');
-        const isDone=editSet.has(ds);
-        const isFuture=ds>today;
-        const dot=isFuture?'·':(isDone?'✓':'✕');
-        let cls='task-day'+(isDone?' done':'')+(ds===today?' today':'')+(isFuture?' future':'');
-        if(!isFuture)cls+=' date-editable';
-        const click=isFuture?'':`onclick="toggleTaskDate('${t.id}','${ds}')"`;
-        return`<div class="${cls}" ${click}><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span><span class="tdd-date">${d.getDate()}</span></div>`;
-      }).join('');
-      const editRowCls='task-days-row'+(editDates.length>7?' scrollable':'');
       return`<div class="task-item" style="--tc:${curCol.done};--tc-soft:${curCol.soft}">
         <div class="task-add-row">
           <input type="text" id="edit-text-${t.id}" value="${safeText}" maxlength="120" onkeydown="if(event.key==='Enter')saveEditTask('${t.id}')">
@@ -3299,8 +3286,6 @@ function renderTasksScreen(){
         </div>
         <div class="task-edit-colors-label">Màu sắc</div>
         <div class="task-edit-colors">${swatches}</div>
-        <div class="task-edit-colors-label" style="margin-top:10px">Chỉnh hoàn thành <span style="font-weight:400;color:var(--text3)">(bấm vào ngày để thay đổi)</span></div>
-        <div class="${editRowCls}">${editDots}</div>
       </div>`;
     }
     const streak=taskStreak(taskDoneDates(t));
