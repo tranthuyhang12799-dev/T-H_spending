@@ -984,7 +984,7 @@ async function startCamera(){
           </div>
         </div>
         <div class="vf-bottom">
-          <div class="money-row">
+          <div class="money-row" id="money-row" style="display:none">
             <div class="money-toggle" id="money-toggle" onclick="toggleMoneyRow()">💰 Thêm chi tiêu</div>
             <div class="money-fields" id="money-fields" style="display:none">
               <div class="money-fields-row">
@@ -1197,7 +1197,7 @@ function saveExpenseEdit(){
 }
 
 // ====== MANUAL ENTRY (thêm thu/chi không cần chụp ảnh, VD: lương chuyển khoản) ======
-let miType='income',miCategory='luong',miLocation=null;
+let miType='expense',miCategory='other',miLocation=null;
 function placeholderImage(type,icon){
   const bg=type==='income'?'#22c55e':'#ef4444';
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="${bg}"/><text x="150" y="168" font-size="130" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">${icon}</text></svg>`;
@@ -1238,7 +1238,7 @@ function miCaptureLocation(){
   },{enableHighAccuracy:true,timeout:8000,maximumAge:60000});
 }
 function openManualEntry(type,dateStr){
-  miType=type||'income';
+  miType=type||'expense';
   miCategory=getCatList(miType)[getCatList(miType).length-1].id;
   miLocation=null;
   document.getElementById('mi-note-input').value='';
@@ -1430,11 +1430,17 @@ function cancelLibraryPreview(){
 }
 
 let isLibraryPreview=false;
+let frozenDataUrl=null; // ảnh đã chụp, chờ lưu
+
 function capturePhoto(){
   const video=document.getElementById('video');
   if(!video){showToast('Chưa bật camera');return;}
   const isImg=video.tagName==='IMG';
   if(isImg&&!video.complete){showToast('Ảnh chưa tải xong, thử lại');return;}
+
+  // Nếu đang ở chế độ freeze (đã chụp rồi) → lưu
+  if(frozenDataUrl){savePhoto();return;}
+
   const flash=document.getElementById('flash');
   flash.style.opacity='1';
   setTimeout(()=>flash.style.opacity='0',150);
@@ -1444,11 +1450,9 @@ function capturePhoto(){
   if(!srcW||!srcH){showToast(isImg?'Ảnh chưa sẵn sàng':'Camera chưa sẵn sàng');return;}
   const ctx=canvas.getContext('2d');
   if(isImg){
-    // Ảnh chọn từ thư viện: giữ nguyên kích thước/tỉ lệ gốc, không crop vuông.
     canvas.width=srcW;canvas.height=srcH;
     ctx.drawImage(video,0,0,srcW,srcH,0,0,srcW,srcH);
   }else{
-    // Ảnh chụp trực tiếp từ camera: giữ crop vuông như cũ.
     const size=Math.min(srcW,srcH);
     canvas.width=size;canvas.height=size;
     if(facingMode==='user'){ctx.translate(size,0);ctx.scale(-1,1);}
@@ -1456,7 +1460,61 @@ function capturePhoto(){
     const yOff=(srcH-size)/2;
     ctx.drawImage(video,xOff,yOff,size,size,0,0,size,size);
   }
-  const dataUrl=sizeDataUrlForFirestore(canvas);
+  frozenDataUrl=sizeDataUrlForFirestore(canvas);
+
+  // Freeze: thay video bằng ảnh tĩnh
+  const wrap=document.getElementById('vf-wrap');
+  const overlay=wrap.querySelector('.vf-overlay');
+  const videoEl=wrap.querySelector('#video');
+  if(videoEl&&!isImg){
+    const img=document.createElement('img');
+    img.id='video';
+    img.src=frozenDataUrl;
+    img.style.cssText='width:100%;height:100%;object-fit:cover;display:block';
+    videoEl.replaceWith(img);
+    if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  }
+
+  // Đổi nút shutter thành ✓
+  const shutterBtn=document.getElementById('shutter-btn');
+  if(shutterBtn)shutterBtn.innerHTML='<div class="shutter-inner" style="display:flex;align-items:center;justify-content:center;font-size:26px;color:#000">✓</div>';
+
+  // Ẩn flip, hiện nút huỷ trong vf-top
+  const flipBtn=document.getElementById('flip-btn');
+  if(flipBtn)flipBtn.style.visibility='hidden';
+  const cancelBtn=document.createElement('div');
+  cancelBtn.className='vf-btn';
+  cancelBtn.id='freeze-cancel-btn';
+  cancelBtn.textContent='✕';
+  cancelBtn.onclick=cancelFreeze;
+  const topBtns=wrap.querySelector('.vf-top-btns');
+  if(topBtns)topBtns.prepend(cancelBtn);
+
+  // Hiện money-row và tự động mở panel nhập số tiền
+  const moneyRow=wrap.querySelector('#money-row');
+  if(moneyRow)moneyRow.style.display='';
+  if(!moneyRowOpen)toggleMoneyRow();
+}
+
+function cancelFreeze(){
+  frozenDataUrl=null;
+  const cancelBtn=document.getElementById('freeze-cancel-btn');
+  if(cancelBtn)cancelBtn.remove();
+  const shutterBtn=document.getElementById('shutter-btn');
+  if(shutterBtn)shutterBtn.innerHTML='<div class="shutter-inner"></div>';
+  const flipBtn=document.getElementById('flip-btn');
+  if(flipBtn)flipBtn.style.visibility='';
+  resetMoneyRow();
+  const moneyRow=document.getElementById('money-row');
+  if(moneyRow)moneyRow.style.display='none';
+  startCamera();
+}
+
+function savePhoto(){
+  const dataUrl=frozenDataUrl;
+  frozenDataUrl=null;
+  const isImg=document.getElementById('video')?.tagName==='IMG';
+
   const captionEl=document.getElementById('caption-input');
   const caption=captionEl?captionEl.value.trim():'';
   if(captionEl)captionEl.value='';
@@ -1480,8 +1538,17 @@ function capturePhoto(){
   uploadPhotoToCloud(photo);
   if(isImg){
     isLibraryPreview=false;
-    startCamera();
   }
+  // Reset shutter và khởi động lại camera
+  const shutterBtn=document.getElementById('shutter-btn');
+  if(shutterBtn)shutterBtn.innerHTML='<div class="shutter-inner"></div>';
+  const flipBtn=document.getElementById('flip-btn');
+  if(flipBtn)flipBtn.style.visibility='';
+  const cancelBtn=document.getElementById('freeze-cancel-btn');
+  if(cancelBtn)cancelBtn.remove();
+  const moneyRow=document.getElementById('money-row');
+  if(moneyRow)moneyRow.style.display='none';
+  startCamera();
 }
 
 async function uploadPhotoToCloud(photo){
