@@ -3130,6 +3130,14 @@ function taskBestStreak(doneDates){
   const runs=taskStreakRuns(doneDates);
   return runs.reduce((m,r)=>Math.max(m,r.len),0);
 }
+// Các ngày đã hoàn thành NẰM TRONG khoảng ngày của nhiệm vụ (bắt đầu → kết thúc).
+// Ngày đã tích nhưng nằm ngoài khoảng (VD: sau khi đổi ngày bắt đầu) vẫn được giữ
+// trong dữ liệu nhưng không được hiển thị hay tính vào chuỗi/tổng, để Danh sách,
+// Lịch tháng và Lịch sử luôn khớp nhau.
+function taskDoneDates(t){
+  const arr=t.doneDates||[];
+  return arr.filter(ds=>(!t.startDate||ds>=t.startDate)&&(!t.endDate||ds<=t.endDate));
+}
 function addDaysStr(ds,n){const d=new Date(ds+'T00:00:00');d.setDate(d.getDate()+n);return toDateStr(d);}
 function taskDisplayDates(t){
   const today=toDateStr(new Date());
@@ -3196,12 +3204,12 @@ function renderTasksScreen(){
   }
 
   if(tasksShowHistory){
-    const sortedByBest=[...tasks].filter(t=>t.doneDates&&t.doneDates.length>0&&t.endDate&&today>t.endDate).sort((a,b)=>taskBestStreak(b.doneDates)-taskBestStreak(a.doneDates));
+    const sortedByBest=[...tasks].filter(t=>taskDoneDates(t).length>0&&t.endDate&&today>t.endDate).sort((a,b)=>taskBestStreak(taskDoneDates(b))-taskBestStreak(taskDoneDates(a)));
     if(!sortedByBest.length){html+='<div class="task-empty">Chưa có nhiệm vụ đã kết thúc nào.<br><span style="font-size:12px;color:var(--text3)">Nhiệm vụ sẽ xuất hiện ở đây sau khi hết hạn.</span></div>';el.innerHTML=html;return;}
     html+=sortedByBest.map(t=>{
-      const runs=taskStreakRuns(t.doneDates);
-      const best=taskBestStreak(t.doneDates);
-      const cur=taskStreak(t.doneDates);
+      const runs=taskStreakRuns(taskDoneDates(t));
+      const best=taskBestStreak(taskDoneDates(t));
+      const cur=taskStreak(taskDoneDates(t));
       const runsHtml=runs.length?runs.map(r=>{
         const label=r.len>1?`${fmtD(r.start)} → ${fmtD(r.end)}`:fmtD(r.start);
         return`<div class="task-hist-run"><span class="thr-len">${r.len} ngày</span><span class="thr-range">${label}</span></div>`;
@@ -3220,7 +3228,7 @@ function renderTasksScreen(){
   }
 
   const activeTasks=tasks.filter(t=>!(t.endDate&&today>t.endDate));
-  const sorted=[...activeTasks].sort((a,b)=>taskStreak(b.doneDates)-taskStreak(a.doneDates)||b.createdAt-a.createdAt);
+  const sorted=[...activeTasks].sort((a,b)=>taskStreak(taskDoneDates(b))-taskStreak(taskDoneDates(a))||b.createdAt-a.createdAt);
   if(!sorted.length){
     html+=`<div class="task-empty">Không có nhiệm vụ đang hoạt động.<br>Các chuỗi đã đến hạn được lưu ở mục "🕘 Lịch sử".</div>`;
     el.innerHTML=html;
@@ -3263,8 +3271,8 @@ function renderTasksScreen(){
         <div class="${editRowCls}">${editDots}</div>
       </div>`;
     }
-    const streak=taskStreak(t.doneDates);
-    const set=new Set(t.doneDates);
+    const streak=taskStreak(taskDoneDates(t));
+    const set=new Set(taskDoneDates(t));
     const outOfRange=(t.startDate&&today<t.startDate)||(t.endDate&&today>t.endDate);
     let rangeLabel='';
     if(t.startDate||t.endDate){
@@ -3298,7 +3306,7 @@ function renderTasksScreen(){
       days+=`<div class="${cls}" ${click}><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span><span class="tdd-date">${d.getDate()}</span></div>`;
     });
     const rowCls='task-days-row'+(displayDates.length>7?' scrollable':'');
-    const totalDone=t.doneDates.length;
+    const totalDone=taskDoneDates(t).length;
     return`<div class="task-item"${colorStyle}>
       <div class="task-item-top">
         <div class="task-main">
@@ -3326,7 +3334,7 @@ function selectTasksCalDay(ds){tasksCalSelected=(tasksCalSelected===ds)?null:ds;
 function tasksCalActiveTasks(){
   const today=toDateStr(new Date());
   return tasks.filter(t=>!(t.endDate&&today>t.endDate))
-    .sort((a,b)=>taskStreak(b.doneDates)-taskStreak(a.doneDates)||b.createdAt-a.createdAt);
+    .sort((a,b)=>taskStreak(taskDoneDates(b))-taskStreak(taskDoneDates(a))||b.createdAt-a.createdAt);
 }
 function tasksCalRange(t){
   if(t.startDate&&t.endDate)return{s:t.startDate,e:t.endDate};
@@ -3339,7 +3347,7 @@ function renderTasksCalendarHtml(){
   const year=base.getFullYear(),month=base.getMonth();
   const monthNames=['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
   const todayStr=toDateStr(new Date());
-  const list=tasksCalActiveTasks().map(t=>({t,r:tasksCalRange(t),done:new Set(t.doneDates||[])}));
+  const list=tasksCalActiveTasks().map(t=>({t,r:tasksCalRange(t),done:new Set(taskDoneDates(t))}));
   let firstDay=new Date(year,month,1).getDay();
   firstDay=(firstDay+6)%7;
   const daysInMonth=new Date(year,month+1,0).getDate();
