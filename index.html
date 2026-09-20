@@ -399,7 +399,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .tcal-grid .cal-day{aspect-ratio:auto;min-height:44px;justify-content:flex-start;padding-top:2px}
 .tcal-ticks-row{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;padding:0 1px}
 .tcal-tick{width:11px;height:11px;border-radius:50%;color:#fff;font-size:7px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}
-.tcal-tick.missed{background:rgba(239,68,68,0.12);color:#ef4444;box-shadow:inset 0 0 0 1px rgba(239,68,68,0.35)}
 .tcal-tick.future{background:transparent;color:var(--text3);box-shadow:inset 0 0 0 1px var(--border)}
 .tcal-day{cursor:pointer;border-radius:10px}
 .tcal-day.selected{background:var(--accent-dim)}
@@ -3330,7 +3329,7 @@ function selectTasksCalDay(ds){tasksCalSelected=(tasksCalSelected===ds)?null:ds;
 //  - chỉ nhiệm vụ đang hoạt động (nhiệm vụ đã hết hạn nằm ở "Lịch sử")
 //  - cùng thứ tự sắp xếp, cùng màu
 //  - mỗi ngày trong khoảng ngày của nhiệm vụ hiện đúng trạng thái như list:
-//    ✓ đã xong · ✕ bỏ lỡ (kể cả hôm nay chưa xong) · dấu chấm nét đứt = chưa tới ngày
+//    ✓ đã xong · dấu chấm nét đứt = chưa tới ngày · chưa xong thì để trống (không hiện ✕)
 function tasksCalActiveTasks(){
   const today=toDateStr(new Date());
   return tasks.filter(t=>!(t.endDate&&today>t.endDate))
@@ -3360,7 +3359,7 @@ function renderTasksCalendarHtml(){
       if(done.has(dateStr))return`<span class="tcal-tick" style="background:${col.done}">✓</span>`;
       if(dateStr<r.s||dateStr>r.e)return'';
       if(dateStr>todayStr)return`<span class="tcal-tick future">·</span>`;
-      return`<span class="tcal-tick missed">✕</span>`;
+      return'';// chưa hoàn thành (hôm nay/quá khứ): không hiện dấu ✕ trên lịch
     }).join('');
     let cls='cal-day tcal-day';
     if(dateStr===todayStr)cls+=' today';
