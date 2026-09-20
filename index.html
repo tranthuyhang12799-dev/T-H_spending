@@ -1109,7 +1109,7 @@ const EXPENSE_CATS=[
   {id:'xa-giao',icon:'🎉',label:'Xã giao',color:'#f97316'},
   {id:'suc-khoe',icon:'🩹',label:'Sức khoẻ',color:'#f43f5e'},
   {id:'giao-duc',icon:'📚',label:'Giáo dục',color:'#6366f1'},
-  {id:'vo-hinh',icon:'👻',label:'Chi phí vô hình',color:'#6b7280'},
+  {id:'vo-hinh',icon:'🏠',label:'Trọ điện nước',color:'#6b7280'},
   {id:'khac',icon:'📦',label:'Khác',color:'#6b7280'}
 ];
 const INCOME_CATS=[
@@ -1123,7 +1123,8 @@ function getCatInfo(type,catId){
   return list.find(c=>c.id===catId)||list[list.length-1];
 }
 function defaultCategoryFor(type,captionVal){
-  if(type==='expense'&&(!captionVal||!captionVal.trim()))return 'vo-hinh';
+  // Mặc định là mục cuối danh sách (Khác). Trước đây chi tiêu không ghi chú tự vào "Chi phí vô hình";
+  // mục này đã đổi thành "Trọ điện nước" nên bỏ luật đó.
   return getCatList(type)[getCatList(type).length-1].id;
 }
 let moneyType='expense',moneyRowOpen=false,selectedCategory='khac',capturedLocation=null,categoryTouched=false;
@@ -1239,7 +1240,7 @@ const MANUAL_EXPENSE_IMAGES={
   'xa-giao':'xa%20giao.png',
   'suc-khoe':'suc%20khoe.png',
   'giao-duc':'giao%20duc.png',
-  'vo-hinh':'chi%20phi%20vo%20hinh.png',
+  'vo-hinh':'tro%20dien%20nuoc.png',
   'khac':'khac.png'
 };
 function placeholderImage(type,icon){
