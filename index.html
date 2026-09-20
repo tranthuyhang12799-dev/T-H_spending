@@ -3008,8 +3008,6 @@ function toggleTaskToday(id){
   else t.doneDates.push(today);
   saveTasks(t);
   renderTasksScreen();
-  if(document.getElementById('s-gallery').classList.contains('active'))renderGallery();
-  if(document.getElementById('s-stats').classList.contains('active'))renderStats();
 }
 function toggleTaskDate(id,ds){
   const t=tasks.find(x=>x.id===id);
@@ -3019,8 +3017,6 @@ function toggleTaskDate(id,ds){
   else t.doneDates.push(ds);
   saveTasks(t);
   renderTasksScreen();
-  if(document.getElementById('s-gallery').classList.contains('active'))renderGallery();
-  if(document.getElementById('s-stats').classList.contains('active'))renderStats();
 }
 function deleteTask(id){
   const t=tasks.find(x=>x.id===id);
