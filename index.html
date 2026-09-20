@@ -2945,7 +2945,7 @@ function subscribeCloudTasks(){
           id:d.id,text:t.text||'',startDate:t.startDate||null,endDate:t.endDate||null,
           doneDates:Array.isArray(t.doneDates)?t.doneDates:[],
           colorIndex:typeof t.colorIndex==='number'?t.colorIndex:undefined,
-          createdAt:t.createdAt||Date.now(),
+          createdAt:t.createdAt?(typeof t.createdAt.toMillis==='function'?t.createdAt.toMillis():typeof t.createdAt==='number'?t.createdAt:Date.now()):Date.now(),
           pendingSync:false
         };
       }).filter(t=>!pendingDeleteIds.includes(t.id));
@@ -3318,7 +3318,8 @@ function renderTasksCalendarHtml(){
   for(let i=0;i<firstDay;i++)grid+='<div class="cal-day empty"></div>';
   for(let d=1;d<=daysInMonth;d++){
     const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const activeTasks=tasks.filter(t=>(!t.startDate||dateStr>=t.startDate)&&(!t.endDate||dateStr<=t.endDate)&&dateStr>=toDateStr(new Date(t.createdAt)));
+    const createdAtMs=typeof t.createdAt==='number'?t.createdAt:(t.createdAt&&typeof t.createdAt.toMillis==='function'?t.createdAt.toMillis():0);
+    const activeTasks=tasks.filter(t=>(!t.startDate||dateStr>=t.startDate)&&(!t.endDate||dateStr<=t.endDate)&&(createdAtMs===0||dateStr>=toDateStr(new Date(createdAtMs))));
     const ticks=activeTasks.filter(t=>t.doneDates.includes(dateStr)).map(t=>{
       const col=taskColor(t.id);
       return`<span class="tcal-tick" style="background:${col.done}">✓</span>`;
