@@ -399,6 +399,16 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .tcal-grid .cal-day{aspect-ratio:auto;min-height:44px;justify-content:flex-start;padding-top:2px}
 .tcal-ticks-row{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;padding:0 1px}
 .tcal-tick{width:11px;height:11px;border-radius:50%;color:#fff;font-size:7px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}
+.tcal-day{cursor:pointer;border-radius:10px}
+.tcal-day.selected{background:var(--accent-dim)}
+.tcal-panel{background:var(--surface);border-radius:14px;padding:12px 14px;margin-top:14px}
+.tcal-panel-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px}
+.tcal-panel-row{display:flex;align-items:center;gap:10px;padding:8px 0;cursor:pointer}
+.tcal-panel-row.disabled{opacity:0.4;cursor:not-allowed}
+.tcal-panel-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--tc);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+.tcal-panel-check.done{background:var(--tc)}
+.tcal-panel-text{font-size:13.5px;color:var(--text);word-break:break-word}
+.tcal-panel-empty{font-size:13px;color:var(--text3);padding:6px 0}
 .tcal-legend{display:flex;flex-wrap:wrap;gap:10px 16px;justify-content:center;margin-top:16px}
 .tcal-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)}
 .tcal-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0}
@@ -2945,7 +2955,7 @@ function subscribeCloudTasks(){
           id:d.id,text:t.text||'',startDate:t.startDate||null,endDate:t.endDate||null,
           doneDates:Array.isArray(t.doneDates)?t.doneDates:[],
           colorIndex:typeof t.colorIndex==='number'?t.colorIndex:undefined,
-          createdAt:t.createdAt?(typeof t.createdAt.toMillis==='function'?t.createdAt.toMillis():typeof t.createdAt==='number'?t.createdAt:Date.now()):Date.now(),
+          createdAt:t.createdAt||Date.now(),
           pendingSync:false
         };
       }).filter(t=>!pendingDeleteIds.includes(t.id));
@@ -3302,9 +3312,10 @@ function renderTasksScreen(){
   }).join('');
   el.innerHTML=html;
 }
-let tasksViewMode='list',tasksCalMonthOffset=0;
+let tasksViewMode='list',tasksCalMonthOffset=0,tasksCalSelected=null;
 function setTasksViewMode(mode){tasksViewMode=mode;renderTasksScreen();}
-function changeTasksCalMonth(delta){tasksCalMonthOffset+=delta;renderTasksScreen();}
+function changeTasksCalMonth(delta){tasksCalMonthOffset+=delta;tasksCalSelected=null;renderTasksScreen();}
+function selectTasksCalDay(ds){tasksCalSelected=(tasksCalSelected===ds)?null:ds;renderTasksScreen();}
 function renderTasksCalendarHtml(){
   const now=new Date();
   const base=new Date(now.getFullYear(),now.getMonth()+tasksCalMonthOffset,1);
@@ -3318,15 +3329,33 @@ function renderTasksCalendarHtml(){
   for(let i=0;i<firstDay;i++)grid+='<div class="cal-day empty"></div>';
   for(let d=1;d<=daysInMonth;d++){
     const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const createdAtMs=typeof t.createdAt==='number'?t.createdAt:(t.createdAt&&typeof t.createdAt.toMillis==='function'?t.createdAt.toMillis():0);
-    const activeTasks=tasks.filter(t=>(!t.startDate||dateStr>=t.startDate)&&(!t.endDate||dateStr<=t.endDate)&&(createdAtMs===0||dateStr>=toDateStr(new Date(createdAtMs))));
-    const ticks=activeTasks.filter(t=>t.doneDates.includes(dateStr)).map(t=>{
+    // Hiện dấu ✓ cho mọi nhiệm vụ đã hoàn thành ngày này. Trước đây bị lọc theo
+    // ngày tạo (createdAt) nên các ngày đã đánh dấu trước ngày tạo/ngày bắt đầu
+    // (VD: chỉnh lại ngày cũ) không bao giờ hiện trên lịch.
+    const ticks=tasks.filter(t=>(t.doneDates||[]).includes(dateStr)).map(t=>{
       const col=taskColor(t.id);
       return`<span class="tcal-tick" style="background:${col.done}">✓</span>`;
     }).join('');
-    let cls='cal-day';
+    let cls='cal-day tcal-day';
     if(dateStr===todayStr)cls+=' today';
-    grid+=`<div class="${cls}"><div class="cal-day-num">${d}</div><div class="tcal-ticks-row">${ticks}</div></div>`;
+    if(dateStr===tasksCalSelected)cls+=' selected';
+    grid+=`<div class="${cls}" onclick="selectTasksCalDay('${dateStr}')"><div class="cal-day-num">${d}</div><div class="tcal-ticks-row">${ticks}</div></div>`;
+  }
+  // Bảng chi tiết ngày đang chọn: bấm vào ô để tích/bỏ tích nhiệm vụ cho ngày đó
+  let panel='';
+  if(tasksCalSelected){
+    const sel=tasksCalSelected;
+    const isFuture=sel>todayStr;
+    const sd=new Date(sel+'T00:00:00');
+    const inRange=t=>(!t.startDate||sel>=t.startDate)&&(!t.endDate||sel<=t.endDate);
+    const dayTasks=tasks.filter(t=>inRange(t)||(t.doneDates||[]).includes(sel));
+    const rows=dayTasks.map(t=>{
+      const col=taskColor(t.id);
+      const done=(t.doneDates||[]).includes(sel);
+      const click=isFuture?'':` onclick="toggleTaskDate('${t.id}','${sel}')"`;
+      return`<div class="tcal-panel-row${isFuture?' disabled':''}"${click}><span class="tcal-panel-check${done?' done':''}" style="--tc:${col.done}">${done?'✓':''}</span><span class="tcal-panel-text">${t.text.replace(/</g,'&lt;')}</span></div>`;
+    }).join('')||'<div class="tcal-panel-empty">Không có nhiệm vụ nào trong ngày này</div>';
+    panel=`<div class="tcal-panel"><div class="tcal-panel-title">${fmtD(sd)}${isFuture?' · chưa đến ngày':''}</div>${rows}</div>`;
   }
   return`<div class="cal-nav-row">
     <button class="cal-nav-btn" onclick="changeTasksCalMonth(-1)">‹</button>
@@ -3335,6 +3364,7 @@ function renderTasksCalendarHtml(){
   </div>
   <div class="cal-weekdays"><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span></div>
   <div class="cal-grid tcal-grid">${grid}</div>
+  ${panel}
   ${tasks.length?`<div class="tcal-legend">${tasks.map(t=>`<div class="tcal-legend-item"><span class="tcal-dot" style="background:${taskColor(t.id).done}"></span>${t.text.replace(/</g,'&lt;')}</div>`).join('')}</div>`:''}`;
 }
 
