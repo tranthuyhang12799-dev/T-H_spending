@@ -4347,9 +4347,8 @@ button,[role=button],input,select,label{-webkit-tap-highlight-color:transparent;
     </div>
     <div class="f" id="daysWrap" hidden><span class="lb">Các ngày trong tuần</span><div class="days" id="days"></div></div>
     <div class="f" id="fDateWrap"><label for="fDate">Ngày thực hiện</label><input type="date" id="fDate"></div>
-    <div class="f" id="fFromWrap" hidden><label for="fFrom">Áp dụng từ ngày</label><input type="date" id="fFrom"><p class="hint">Để trống nếu muốn áp dụng cả cho những ngày trước.</p></div>
+    <div class="f" id="fFromWrap" hidden><label for="fFrom">Áp dụng từ ngày</label><input type="date" id="fFrom"></div>
     <div class="f"><label for="fNote">Ghi chú (không bắt buộc)</label><textarea id="fNote" maxlength="300"></textarea></div>
-    <p class="hint" id="editHint" hidden>Việc này lặp lại, nên mọi thay đổi và việc xoá sẽ áp dụng cho tất cả các ngày.</p>
     <p class="err" id="err" role="alert"></p>
     <div class="actions">
       <button type="button" class="btn danger" id="del" hidden>Xoá</button>
@@ -4573,7 +4572,6 @@ button,[role=button],input,select,label{-webkit-tap-highlight-color:transparent;
     var chk=document.querySelectorAll('input[name=dow]');
     for(var i=0;i<chk.length;i++){chk[i].checked=!!task&&task.mode==='days'&&task.days.indexOf(+chk[i].value)>-1;}
     $('fNote').value=task?task.note:'';
-    $('editHint').hidden=!(task&&task.mode!=='once');
     syncMode();
     dlg.showModal();
     $('fTitle').focus();
