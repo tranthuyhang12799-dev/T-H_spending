@@ -2239,6 +2239,15 @@ function renderReminderUI(){
       <div class="reminder-section-title">Nhắc cho nhiệm vụ</div>
       <div class="reminder-task-list">${taskRows}</div>
     </div>
+    <div class="reminder-toggle-row" style="margin-top:14px">
+      <div><div class="reminder-toggle-label">Nhắc việc trong To do</div><div class="reminder-toggle-sub">Báo lên điện thoại trước giờ bắt đầu mỗi việc</div></div>
+      <button class="toggle-switch${cfg.todoNotify?' on':''}" id="todo-notify-toggle" onclick="toggleTodoNotify()"></button>
+    </div>
+    <div id="todo-notify-detail" style="${cfg.todoNotify?'':'opacity:0.4;pointer-events:none'}">
+      <div class="reminder-section-title">Nhắc trước giờ bắt đầu (mặc định 10 phút)</div>
+      <div class="reminder-task-list">${todoReminderRows()}</div>
+      <div class="reminder-note">Việc mới thêm trong To do tự động nhắc trước 10 phút; bạn cũng có thể chỉnh ngay trong form thêm/sửa việc.</div>
+    </div>
     ${perm==='denied'?`<div class="reminder-note">⚠️ Trình duyệt đang chặn thông báo. Vào cài đặt trình duyệt để cấp quyền.</div>`:''}
     ${!hasPerm?`<div class="reminder-note">Trình duyệt này không hỗ trợ thông báo.</div>`:''}
     <button class="reminder-save-btn" onclick="saveReminderSettings()">Lưu cài đặt</button>
@@ -2310,6 +2319,207 @@ function fireReminderNotification(){
     ?`"${pending[0].text}" chưa hoàn thành hôm nay!`
     :`${pending.length} nhiệm vụ chưa hoàn thành: ${pending.map(t=>t.text).join(', ')}`;
   try{new Notification('🔥 Nhắc nhiệm vụ hôm nay',{body,icon:'icon-192.png',badge:'icon-192.png'});}catch(e){}
+}
+/* ====== NHẮC TO DO TRƯỚC 10 PHÚT ====== */
+const TODO_LEAD_MIN=10; // mặc định cho việc mới / việc chưa có cài đặt
+const TODO_REMIND_OPTS=[0,5,10,15,20,30,45,60];
+function todoLeadOf(t){return typeof t.remind==='number'?t.remind:TODO_LEAD_MIN;}
+function todoModeLabel(t){
+  if(t.mode==='daily')return'Hằng ngày';
+  if(t.mode==='days'){const n=['CN','T2','T3','T4','T5','T6','T7'];return(t.days||[]).map(d=>n[d]).join(', ');}
+  return t.date||'';
+}
+function todoReminderRows(){
+  const st=todoReadLocal();
+  const list=(st&&Array.isArray(st.tasks)?st.tasks:[]).slice().sort((a,b)=>(a.start-b.start)||(a.end-b.end));
+  if(!list.length)return'<div class="reminder-note">Chưa có việc nào trong To do</div>';
+  return list.map(t=>{
+    const cur=todoLeadOf(t);
+    return`<div class="reminder-task-row">
+      <span class="reminder-task-name">${todoEsc(t.title)}<br><small style="color:var(--text3)">${todoFmt(t.start)} · ${todoEsc(todoModeLabel(t))}</small></span>
+      <select class="reminder-time-input" style="width:auto" onchange="setTodoTaskRemind(${t.id},this.value)">
+        ${TODO_REMIND_OPTS.map(m=>`<option value="${m}"${m===cur?' selected':''}>${m?m+' phút':'Không nhắc'}</option>`).join('')}
+      </select>
+    </div>`;
+  }).join('');
+}
+function setTodoTaskRemind(id,v){
+  const st=todoReadLocal();
+  if(!st||!Array.isArray(st.tasks))return;
+  const t=st.tasks.find(x=>x.id===id);
+  if(!t)return;
+  t.remind=parseInt(v,10)||0;
+  st.updatedAt=Date.now();
+  try{localStorage.setItem(todoKey(),JSON.stringify(st));}catch(e){}
+  todoPush();
+  const f=document.querySelector('#s-todo iframe');
+  if(f&&f.contentWindow&&f.contentWindow.__todo)f.contentWindow.__todo.replace(st);
+  // cho phép nhắc lại việc này hôm nay theo mốc mới
+  try{
+    const n=JSON.parse(localStorage.getItem(TODO_NOTIFIED_KEY))||{};
+    delete n[toDateStr(new Date())+'|'+id];
+    localStorage.setItem(TODO_NOTIFIED_KEY,JSON.stringify(n));
+  }catch(e){}
+  showToast(t.remind?'✅ Sẽ nhắc trước '+t.remind+' phút':'🔕 Đã tắt nhắc cho việc này');
+  checkTodoReminders();
+}
+function toggleTodoNotify(){
+  const cfg=loadReminderCfg();
+  cfg.todoNotify=!cfg.todoNotify;
+  saveReminderCfg(cfg);
+  renderReminderUI();
+  if(!cfg.todoNotify){stopTodoNotify();showToast('🔕 Đã tắt nhắc To do');return;}
+  if(!('Notification' in window)){showToast('⚠️ Thiết bị này không hỗ trợ thông báo');return;}
+  const go=()=>{startTodoNotify();showToast('✅ Đã bật nhắc To do');};
+  if(Notification.permission==='granted')go();
+  else if(Notification.permission==='default'){
+    Notification.requestPermission().then(p=>{
+      if(p==='granted')go();
+      else{showToast('⚠️ Cần cấp quyền thông báo để nhắc To do');renderReminderUI();}
+    });
+  }else{showToast('⚠️ Trình duyệt đang chặn thông báo');renderReminderUI();}
+}
+function stopTodoNotify(){if(todoNotifyTimer){clearInterval(todoNotifyTimer);todoNotifyTimer=null;}}
+function startTodoNotify(){
+  stopTodoNotify();
+  const cfg=loadReminderCfg();
+  if(!cfg.todoNotify||!('Notification' in window)||Notification.permission!=='granted')return;
+  checkTodoReminders();
+  todoNotifyTimer=setInterval(checkTodoReminders,30000);
+}
+function todoShowNotification(title,body,tag){
+  const opts={body,icon:'icon-192.png',badge:'icon-192.png',tag,renotify:false,requireInteraction:true,vibrate:[400,200,400,200,400],data:{url:'./'}};
+  // Android/PWA yêu cầu hiện thông báo qua service worker (new Notification() không chạy được)
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.ready.then(reg=>reg.showNotification(title,opts))
+      .catch(()=>{try{new Notification(title,opts);}catch(e){}});
+  }else{try{new Notification(title,opts);}catch(e){}}
+}
+function checkTodoReminders(){
+  const cfg=loadReminderCfg();
+  if(!cfg.todoNotify||!('Notification' in window)||Notification.permission!=='granted')return;
+  const st=todoReadLocal();
+  if(!st)return;
+  const now=new Date(),ds=toDateStr(now);
+  const nowMin=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
+  let notified={};
+  try{notified=JSON.parse(localStorage.getItem(TODO_NOTIFIED_KEY))||{};}catch(e){}
+  // chỉ giữ dấu "đã nhắc" của hôm nay
+  Object.keys(notified).forEach(k=>{if(k.indexOf(ds+'|')!==0)delete notified[k];});
+  let changed=false;
+  todoTasksOn(st,ds).forEach(t=>{
+    const key=ds+'|'+t.id;
+    if(notified[key])return;
+    if(st.done&&st.done[key])return;               // đã xong thì không nhắc
+    const lead=todoLeadOf(t);
+    if(!lead)return;                                // việc này không nhắc
+    const left=t.start-nowMin;                      // số phút còn lại đến giờ bắt đầu
+    if(left>0&&left<=lead){
+      const mins=Math.max(1,Math.ceil(left));
+      todoRaiseAlarm(t,mins,key);
+      notified[key]=1;changed=true;
+    }
+  });
+  if(changed){try{localStorage.setItem(TODO_NOTIFIED_KEY,JSON.stringify(notified));}catch(e){}}
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkTodoReminders();showNextTodoAlarm();}});
+
+/* ====== BÁO THỨC TRÀN MÀN HÌNH (lướt phải để tắt) ====== */
+let todoAlarmQueue=[],todoAlarmEl=null,todoAlarmTick=null,todoAlarmBeep=null,todoAlarmVib=null,todoAlarmCtx=null;
+function todoRaiseAlarm(t,mins,key){
+  todoAlarmQueue.push({id:t.id,title:t.title,start:t.start});
+  if(!document.hidden){showNextTodoAlarm();}
+  else{ // app đang ẩn: gửi thông báo hệ thống, mở app lên sẽ hiện màn hình báo thức
+    todoShowNotification('⏰ Sắp đến giờ: '+t.title,'Còn '+mins+' phút nữa · bắt đầu lúc '+todoFmt(t.start),'todo-'+key);
+  }
+}
+function todoAlarmCss(){
+  if(document.getElementById('todo-alarm-css'))return;
+  const st=document.createElement('style');st.id='todo-alarm-css';
+  st.textContent=`
+#todo-alarm{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:calc(env(safe-area-inset-top,0px) + 24px) 24px calc(env(safe-area-inset-bottom,0px) + 40px);background:linear-gradient(160deg,#1e1b4b 0%,#312e81 45%,#7c3aed 100%);color:#fff;text-align:center;font-family:inherit;animation:taIn .35s ease}
+#todo-alarm.out{animation:taOut .3s ease forwards}
+@keyframes taIn{from{opacity:0;transform:scale(1.04)}to{opacity:1;transform:none}}
+@keyframes taOut{to{opacity:0;transform:translateX(60%)}}
+@keyframes taRing{0%,100%{transform:rotate(0)}10%,30%,50%{transform:rotate(-14deg)}20%,40%,60%{transform:rotate(14deg)}70%{transform:rotate(0)}}
+#todo-alarm .ta-bell{font-size:84px;line-height:1;animation:taRing 1.4s ease-in-out infinite;transform-origin:50% 10%}
+#todo-alarm .ta-tag{font-size:13px;letter-spacing:.14em;text-transform:uppercase;opacity:.75;font-weight:700}
+#todo-alarm .ta-title{font-size:30px;font-weight:800;line-height:1.25;word-break:break-word;max-width:92%}
+#todo-alarm .ta-sub{font-size:17px;opacity:.9}
+#todo-alarm .ta-more{font-size:13px;opacity:.7;min-height:18px}
+#todo-alarm .ta-track{position:relative;width:min(340px,88vw);height:64px;margin-top:34px;border-radius:32px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+#todo-alarm .ta-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-left:48px;font-size:15px;font-weight:600;letter-spacing:.02em;opacity:.9;pointer-events:none}
+#todo-alarm .ta-knob{position:absolute;left:4px;top:4px;width:56px;height:56px;border-radius:50%;background:#fff;color:#4c1d95;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.3);touch-action:none;cursor:grab}
+#todo-alarm .ta-knob.back{transition:transform .25s ease}`;
+  document.head.appendChild(st);
+}
+function showNextTodoAlarm(){
+  if(todoAlarmEl||!todoAlarmQueue.length||document.hidden)return;
+  todoAlarmCss();
+  const a=todoAlarmQueue.shift();
+  const el=document.createElement('div');
+  el.id='todo-alarm';el.setAttribute('role','alertdialog');el.setAttribute('aria-label','Nhắc việc sắp đến giờ');
+  el.innerHTML='<div class="ta-bell">⏰</div><div class="ta-tag">Sắp đến giờ</div><div class="ta-title"></div><div class="ta-sub"></div><div class="ta-more"></div>'
+    +'<div class="ta-track"><div class="ta-label">Lướt phải để tắt ›››</div><div class="ta-knob">›</div></div>';
+  el.querySelector('.ta-title').textContent=a.title;
+  document.body.appendChild(el);todoAlarmEl=el;
+  const sub=el.querySelector('.ta-sub'),more=el.querySelector('.ta-more');
+  const upd=()=>{
+    const n=new Date(),nm=n.getHours()*60+n.getMinutes()+n.getSeconds()/60,left=Math.ceil(a.start-nm);
+    sub.textContent=left>0?('Còn '+left+' phút · bắt đầu lúc '+todoFmt(a.start)):('Đã đến giờ · '+todoFmt(a.start));
+    more.textContent=todoAlarmQueue.length?('+'+todoAlarmQueue.length+' việc khác đang chờ'):'';
+  };
+  upd();todoAlarmTick=setInterval(upd,5000);
+  // thanh lướt
+  const track=el.querySelector('.ta-track'),knob=el.querySelector('.ta-knob'),label=el.querySelector('.ta-label');
+  let startX=0,dx=0,drag=false,maxX=0;
+  knob.addEventListener('pointerdown',e=>{
+    drag=true;startX=e.clientX;dx=0;maxX=track.clientWidth-knob.offsetWidth-8;
+    knob.classList.remove('back');try{knob.setPointerCapture(e.pointerId);}catch(_){}
+  });
+  knob.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    dx=Math.max(0,Math.min(maxX,e.clientX-startX));
+    knob.style.transform='translateX('+dx+'px)';
+    label.style.opacity=String(Math.max(0,.9-dx/maxX*1.2));
+  });
+  const end=()=>{
+    if(!drag)return;drag=false;
+    if(dx>=maxX*0.8){dismissTodoAlarm();}
+    else{knob.classList.add('back');knob.style.transform='translateX(0)';label.style.opacity='.9';}
+  };
+  knob.addEventListener('pointerup',end);knob.addEventListener('pointercancel',end);
+  todoAlarmFeedback(true);
+}
+function dismissTodoAlarm(){
+  const el=todoAlarmEl;if(!el)return;
+  todoAlarmFeedback(false);
+  clearInterval(todoAlarmTick);todoAlarmTick=null;
+  el.classList.add('out');
+  setTimeout(()=>{el.remove();if(todoAlarmEl===el)todoAlarmEl=null;setTimeout(showNextTodoAlarm,150);},300);
+}
+function todoAlarmFeedback(on){
+  clearInterval(todoAlarmBeep);clearInterval(todoAlarmVib);todoAlarmBeep=todoAlarmVib=null;
+  if(!on){try{navigator.vibrate&&navigator.vibrate(0);}catch(e){}return;}
+  const vib=()=>{try{navigator.vibrate&&navigator.vibrate([400,200,400]);}catch(e){}};
+  vib();todoAlarmVib=setInterval(vib,1500);
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)return;
+    if(!todoAlarmCtx)todoAlarmCtx=new AC();
+    if(todoAlarmCtx.resume)todoAlarmCtx.resume();
+    const beep=()=>{
+      try{
+        const c=todoAlarmCtx,o=c.createOscillator(),g=c.createGain();
+        o.type='sine';o.frequency.value=880;
+        g.gain.setValueAtTime(0.0001,c.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.25,c.currentTime+0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+0.3);
+        o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+0.32);
+      }catch(e){}
+    };
+    beep();todoAlarmBeep=setInterval(beep,900);
+  }catch(e){}
 }
 /* ===== APP LOCK ===== */
 const APPLOCK_KEY='th_applock_cfg';
@@ -3853,6 +4063,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   loadTasks();
   switchTab('gallery');
   scheduleReminders();
+  startTodoNotify();
   if(isStandalonePWA()){
     const hint=document.getElementById('login-safari-hint');
     if(hint)hint.style.display='block';
@@ -4348,6 +4559,19 @@ button,[role=button],input,select,label{-webkit-tap-highlight-color:transparent;
     <div class="f" id="daysWrap" hidden><span class="lb">Các ngày trong tuần</span><div class="days" id="days"></div></div>
     <div class="f" id="fDateWrap"><label for="fDate">Ngày thực hiện</label><input type="date" id="fDate"></div>
     <div class="f" id="fFromWrap" hidden><label for="fFrom">Áp dụng từ ngày</label><input type="date" id="fFrom"></div>
+    <div class="f">
+      <label for="fRemind">Nhắc trước giờ bắt đầu</label>
+      <select id="fRemind">
+        <option value="0">Không nhắc</option>
+        <option value="5">5 phút</option>
+        <option value="10" selected>10 phút</option>
+        <option value="15">15 phút</option>
+        <option value="20">20 phút</option>
+        <option value="30">30 phút</option>
+        <option value="45">45 phút</option>
+        <option value="60">60 phút</option>
+      </select>
+    </div>
     <div class="f"><label for="fNote">Ghi chú (không bắt buộc)</label><textarea id="fNote" maxlength="300"></textarea></div>
     <p class="err" id="err" role="alert"></p>
     <div class="actions">
@@ -4572,6 +4796,7 @@ button,[role=button],input,select,label{-webkit-tap-highlight-color:transparent;
     var chk=document.querySelectorAll('input[name=dow]');
     for(var i=0;i<chk.length;i++){chk[i].checked=!!task&&task.mode==='days'&&task.days.indexOf(+chk[i].value)>-1;}
     $('fNote').value=task?task.note:'';
+    $('fRemind').value=String(task&&typeof task.remind==='number'?task.remind:10);
     syncMode();
     dlg.showModal();
     $('fTitle').focus();
@@ -4595,7 +4820,7 @@ button,[role=button],input,select,label{-webkit-tap-highlight-color:transparent;
     else if(mode==='once'&&!$('fDate').value)err='Hãy chọn ngày thực hiện.';
     else if(mode==='days'&&!days.length)err='Hãy chọn ít nhất một ngày trong tuần.';
     if(err){$('err').textContent=err;return;}
-    var data={title:title,start:s,end:e,cat:getCat(),mode:mode,days:mode==='days'?days:[],note:$('fNote').value.trim()};
+    var data={title:title,start:s,end:e,cat:getCat(),mode:mode,days:mode==='days'?days:[],note:$('fNote').value.trim(),remind:+$('fRemind').value};
     if(mode==='once'){data.date=$('fDate').value;cur=data.date;}
     else if($('fFrom').value){data.from=$('fFrom').value;}
     if(editing){
