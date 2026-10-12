@@ -319,6 +319,30 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .gh-icon-btn{width:38px;height:38px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:16px;cursor:pointer;flex-shrink:0}
 .gh-photo-count{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--text2);background:var(--surface2);border-radius:20px;padding:8px 12px;flex-shrink:0}
 .gh-photo-count b{color:var(--text);font-weight:700}
+/* LOCKET MODE: nút chuyển chế độ + ẩn toàn bộ tiền/chi tiêu */
+.gh-locket-btn{margin-left:auto;width:38px;height:38px;border-radius:50%;background:var(--surface2);border:1.5px solid transparent;font-size:17px;line-height:1;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:background .2s,transform .15s}
+.gh-locket-btn:active{transform:scale(.92)}
+.gh-locket-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 3px 10px rgba(var(--accent-rgb),0.35)}
+body.locket-mode .gh-pill,
+body.locket-mode .gh-summary-row,
+body.locket-mode .cal-day-amount,
+body.locket-mode .cal-day-add-link,
+body.locket-mode .viewer-amount,
+body.locket-mode #viewer-expense-btn,
+body.locket-mode .day-total-pill,
+body.locket-mode .day-nav-total,
+body.locket-mode .ds-total,
+body.locket-mode .ds-card-pill,
+body.locket-mode .ds-card-amount,
+body.locket-mode .money-row,
+body.locket-mode .fab-money-item,
+body.locket-mode .ds-sheet-btn.money-only{display:none!important}
+.lk-feed{display:flex;flex-direction:column;gap:16px}
+.lk-card{position:relative;border-radius:26px;overflow:hidden;background:var(--surface2);aspect-ratio:1/1;cursor:pointer;box-shadow:0 6px 18px var(--card-shadow)}
+.lk-card img{width:100%;height:100%;object-fit:cover;display:block}
+.lk-card-info{position:absolute;left:0;right:0;bottom:0;padding:34px 16px 14px;background:linear-gradient(to top,rgba(0,0,0,0.55),transparent);color:#fff;display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.lk-card-cap{font-size:14px;font-weight:600;line-height:1.3;min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.lk-card-time{font-size:12px;font-weight:600;opacity:.9;flex-shrink:0;background:rgba(0,0,0,0.35);border-radius:12px;padding:3px 9px}
 .gh-summary-row{display:flex;gap:10px;flex-shrink:0}
 .gh-summary-card{flex:1;display:flex;align-items:center;gap:10px;background:var(--surface);border:0.5px solid var(--border);border-radius:16px;padding:12px 14px}
 .gh-summary-eye{width:30px;height:30px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:13px;cursor:pointer;flex-shrink:0;margin-left:auto;display:flex;align-items:center;justify-content:center}
@@ -696,7 +720,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
     <div class="fab-sheet-list">
       <div class="fab-sheet-item" onclick="closeFabSheet();pickFromLibrary()"><div class="fab-sheet-icon" style="background:rgba(168,85,247,0.16);color:#a855f7">🖼️</div><div><strong>Chọn ảnh từ thư viện</strong><span>Tải ảnh có sẵn trong máy kèm số tiền</span></div></div>
       <div class="fab-sheet-item" onclick="closeFabSheet();switchTab('camera')"><div class="fab-sheet-icon" style="background:var(--accent-dim);color:var(--accent)">📷</div><div><strong>Chụp ảnh</strong><span>Chụp hoá đơn hoặc khoảnh khắc kèm số tiền</span></div></div>
-      <div class="fab-sheet-item" onclick="closeFabSheet();openManualEntry('expense')"><div class="fab-sheet-icon" style="background:rgba(239,68,68,0.16);color:#ef4444">🧾</div><div><strong>Thêm giao dịch</strong><span>Ghi chi tiêu hoặc thu nhập thủ công, không cần ảnh</span></div></div>
+      <div class="fab-sheet-item fab-money-item" onclick="closeFabSheet();openManualEntry('expense')"><div class="fab-sheet-icon" style="background:rgba(239,68,68,0.16);color:#ef4444">🧾</div><div><strong>Thêm giao dịch</strong><span>Ghi chi tiêu hoặc thu nhập thủ công, không cần ảnh</span></div></div>
     </div>
   </div>
 </div>
@@ -763,7 +787,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   <div class="ds-sheet" id="ds-sheet" onclick="closeDsSheet()">
     <div class="ds-sheet-card" onclick="event.stopPropagation()">
       <button class="ds-sheet-btn" onclick="dsAddFromLibrary()">🖼️ Chọn ảnh từ máy</button>
-      <button class="ds-sheet-btn" onclick="dsAddManual()">✍️ Tự nhập chi tiêu / thu nhập</button>
+      <button class="ds-sheet-btn money-only" onclick="dsAddManual()">✍️ Tự nhập chi tiêu / thu nhập</button>
       <button class="ds-sheet-btn cancel" onclick="closeDsSheet()">Huỷ</button>
     </div>
   </div>
@@ -1650,6 +1674,22 @@ function updateThumbPreview(){
 }
 
 let galleryViewMode='month',amountsHidden=false,incomeCardHidden=true,selectedDayStr=null;
+// ====== CHẾ ĐỘ LOCKET: chỉ còn nhật ký ảnh theo ngày, ẩn toàn bộ số tiền & chi tiêu ======
+const LOCKET_KEY='th_locket_mode';
+let locketMode=false;
+try{locketMode=localStorage.getItem(LOCKET_KEY)==='1';}catch(e){}
+function applyLocketClass(){if(document.body)document.body.classList.toggle('locket-mode',locketMode);}
+function galleryPhotos(){return locketMode?photos.filter(p=>!p.manual):photos;}
+function toggleLocketMode(){
+  locketMode=!locketMode;
+  try{localStorage.setItem(LOCKET_KEY,locketMode?'1':'0');}catch(e){}
+  applyLocketClass();
+  closeDaySummary&&closeDaySummary();
+  renderGallery();
+  if(document.getElementById('s-stats')&&document.getElementById('s-stats').classList.contains('active'))renderStats();
+  showToast(locketMode?'Đã bật chế độ Locket 📸 — ẩn toàn bộ số tiền':'Đã tắt chế độ Locket');
+}
+applyLocketClass();
 function greetingParts(){
   const h=new Date().getHours();
   if(h<11)return['Chào buổi sáng','🌤️'];
@@ -1688,6 +1728,7 @@ function renderGallery(){
   const monthExpense=monthPhotos.filter(p=>p.moneyType==='expense').reduce((s,p)=>s+(p.amount||0),0);
   const monthIncome=monthPhotos.filter(p=>p.moneyType==='income').reduce((s,p)=>s+(p.amount||0),0);
   const monthPhotoCount=monthPhotos.filter(p=>p.dataUrl&&!p.manual).length;
+  applyLocketClass();
 
   let html=`
   <div class="gh-greet-row">
@@ -1695,7 +1736,7 @@ function renderGallery(){
       <div class="gh-greet">${greet} ${emoji}</div>
       <div class="gh-name">${getDisplayName()||(currentUser&&currentUser.displayName)||'Đặt tên trong Cài đặt'}</div>
     </div>
-    <div class="gh-pill ${todayExpense>0?'warn':'good'}" style="flex-shrink:0">${todayExpense>0?`🧾 Hôm nay đã chi ${formatVND(todayExpense)}`:'🌿 Hôm nay chưa chi tiêu'}</div>
+    ${locketMode?'':`<div class="gh-pill ${todayExpense>0?'warn':'good'}" style="flex-shrink:0">${todayExpense>0?`🧾 Hôm nay đã chi ${formatVND(todayExpense)}`:'🌿 Hôm nay chưa chi tiêu'}</div>`}
   </div>
   <div class="gh-toggle-row">
     <div class="gh-toggle-group">
@@ -1705,11 +1746,12 @@ function renderGallery(){
       </div>
       ${galleryViewMode==='month'?`<div class="gh-photo-count" onclick="openMonthPhotoList()" style="cursor:pointer">📷 <b>${monthPhotoCount}</b></div>`:''}
     </div>
+    <button class="gh-locket-btn${locketMode?' active':''}" onclick="toggleLocketMode()" aria-pressed="${locketMode}" aria-label="Chế độ Locket: ẩn số tiền và chi tiêu" title="Chế độ Locket">${locketMode?'📸':'💸'}</button>
   </div>
-  <div class="gh-summary-row">
+  ${locketMode?'':`<div class="gh-summary-row">
     <div class="gh-summary-card expense"><div class="gh-summary-icon expense">↗</div><div class="gh-summary-body"><div class="gh-summary-label">Chi</div><div class="gh-summary-val">${maskAmount('-'+formatVND(monthExpense))}</div></div><button class="gh-summary-eye" onclick="toggleAmountsHidden()">${amountsHidden?'🙈':'👁️'}</button></div>
     <div class="gh-summary-card income"><div class="gh-summary-icon income">↙</div><div class="gh-summary-body"><div class="gh-summary-label">Thu</div><div class="gh-summary-val">${maskIncomeCard('+'+formatVND(monthIncome))}</div></div><button class="gh-summary-eye" onclick="toggleIncomeCardHidden()">${incomeCardHidden?'🙈':'👁️'}</button></div>
-  </div>`;
+  </div>`}`;
 
   if(galleryViewMode==='month'){
     html+=renderMonthCalendarHtml(year,month);
@@ -1722,11 +1764,12 @@ function renderGallery(){
 function renderDayListHtml(){
   const today=toDateStr(new Date());
   if(!selectedDayStr)selectedDayStr=today;
-  if(photos.length===0){
+  const srcPhotos=galleryPhotos();
+  if(srcPhotos.length===0){
     return`<div class="empty-gallery"><div class="big-icon">📷</div><h3>Chưa có ảnh nào</h3><p>Chụp ảnh hoặc thêm giao dịch thủ công đầu tiên ngay hôm nay!</p></div>`;
   }
   const yesterday=toDateStr(new Date(Date.now()-86400000));
-  const dayPhotos=photos.filter(p=>p.date===selectedDayStr);
+  const dayPhotos=srcPhotos.filter(p=>p.date===selectedDayStr);
   const d=new Date(selectedDayStr+'T00:00:00');
   let label=selectedDayStr;
   if(selectedDayStr===today)label='Hôm nay';
@@ -1742,7 +1785,7 @@ function renderDayListHtml(){
     <button class="day-nav-arrow" onclick="changeSelectedDay(-1)">‹</button>
     <div class="day-nav-mid" onclick="openDayPicker()">
       <span class="day-nav-date">${label} · ${dateLabel}</span>
-      <span class="day-nav-total ${totalPillCls}">${totalPillTxt}</span>
+      ${locketMode?'':`<span class="day-nav-total ${totalPillCls}">${totalPillTxt}</span>`}
       <span class="day-nav-cal">▾</span>
     </div>
     <button class="day-nav-arrow" onclick="changeSelectedDay(1)">›</button>
@@ -1750,9 +1793,21 @@ function renderDayListHtml(){
   <input type="date" id="day-date-input" value="${selectedDayStr}" onchange="onDayPicked(this.value)">`;
 
   if(dayPhotos.length===0){
-    return nav+`<div class="empty-gallery"><div class="big-icon">🗓️</div><h3>Không có giao dịch</h3><p>Chưa có chi tiêu hay thu nhập nào trong ngày này.</p></div>`;
+    return nav+(locketMode
+      ?`<div class="empty-gallery"><div class="big-icon">🗓️</div><h3>Chưa có ảnh</h3><p>Ngày này chưa lưu khoảnh khắc nào.</p></div>`
+      :`<div class="empty-gallery"><div class="big-icon">🗓️</div><h3>Không có giao dịch</h3><p>Chưa có chi tiêu hay thu nhập nào trong ngày này.</p></div>`);
   }
   const sortedDayPhotos=[...dayPhotos].sort((a,b)=>(b.time||'').localeCompare(a.time||''));
+  if(locketMode){
+    const cards=sortedDayPhotos.map(p=>{
+      const cap=p.caption&&p.caption.trim()?p.caption.trim().replace(/</g,'&lt;'):'';
+      return`<div class="lk-card" onclick="openViewer('${p.id}')">
+        <img src="${p.dataUrl}" alt="" loading="lazy">
+        <div class="lk-card-info"><div class="lk-card-cap">${cap}</div><div class="lk-card-time">${p.time||''}</div></div>
+      </div>`;
+    }).join('');
+    return nav+`<div class="lk-feed">${cards}</div>`;
+  }
   const thumbs=sortedDayPhotos.map(p=>renderTxRowHtml(p)).join('');
   return nav+`<div class="tx-list">${thumbs}</div>`;
 }
@@ -1762,6 +1817,13 @@ function renderTxRowHtml(p){
   const catEmoji=info?info.icon:(p.moneyType==='income'?'💰':'🧾');
   const amountCls=p.moneyType==='expense'?'expense':'income';
   const sign=p.moneyType==='expense'?'-':'+';
+  if(locketMode&&p.dataUrl){
+    const cap=p.caption&&p.caption.trim()?p.caption.trim().replace(/</g,'&lt;'):'Khoảnh khắc';
+    return`<div class="tx-row" onclick="openViewer('${p.id}')">
+      <div class="tx-row-thumb"><img src="${p.dataUrl}" alt="" loading="lazy"></div>
+      <div class="tx-row-body"><div class="tx-row-cat">${cap}</div><div class="tx-row-sub">${p.time||''}</div></div>
+    </div>`;
+  }
   const thumbInner=p.dataUrl?`<img src="${p.dataUrl}" alt="" loading="lazy">`:`<div class="no-photo">${catEmoji}</div>`;
   const capText=p.caption&&p.caption.trim()?p.caption.trim():catLabel;
   return`<div class="tx-row" onclick="openViewer('${p.id}')">
@@ -1792,7 +1854,8 @@ function onDayPicked(val){
 
 function renderMonthCalendarHtml(year,month){
   const monthNames=['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
-  const photoDates=new Set(photos.map(p=>p.date));
+  const srcPhotos=galleryPhotos();
+  const photoDates=new Set(srcPhotos.map(p=>p.date));
   const streakDates=getStreakDates();
   const todayStr=toDateStr(new Date());
   let firstDay=new Date(year,month,1).getDay();
@@ -1803,7 +1866,7 @@ function renderMonthCalendarHtml(year,month){
   for(let d=1;d<=daysInMonth;d++){
     const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const hasPhoto=photoDates.has(dateStr);
-    const isStreak=streakDates.has(dateStr);
+    const isStreak=streakDates.has(dateStr)&&(!locketMode||hasPhoto);
     let cls='cal-day';
     if(dateStr===todayStr)cls+=' today';
     if(isStreak)cls+=' streak-day';
@@ -1811,7 +1874,7 @@ function renderMonthCalendarHtml(year,month){
     if(selectedCalDate===dateStr)cls+=' selected';
     let inner,amountHtml='';
     if(hasPhoto){
-      const dayPhotos=photos.filter(p=>p.date===dateStr);
+      const dayPhotos=srcPhotos.filter(p=>p.date===dateStr);
       if(dayPhotos.length>1){
         const extra=dayPhotos.length-2;
         const badgeHtml=extra>0?`<div class="cal-day-stack-badge">+${extra}</div>`:'';
@@ -1835,14 +1898,14 @@ function renderMonthCalendarHtml(year,month){
       }
     }else{
       amountHtml=`<div class="cal-day-amount cal-day-amount-empty">&nbsp;</div>`;
-      inner=`<div class="cal-day-add" onclick="event.stopPropagation();openManualEntry(null,'${dateStr}')">+</div>`;
+      inner=`<div class="cal-day-add" onclick="event.stopPropagation();${locketMode?`pickFromLibrary('${dateStr}')`:`openManualEntry(null,'${dateStr}')`}">+</div>`;
     }
     const clickAttr=hasPhoto?` onclick="calDayClick('${dateStr}')"`:'';
     grid+=`<div class="${cls}"${clickAttr}>${inner}<div class="cal-day-num">${d}</div>${amountHtml}</div>`;
   }
   let dayPhotosHtml='';
   if(selectedCalDate){
-    const dayPhotos=photos.filter(p=>p.date===selectedCalDate);
+    const dayPhotos=srcPhotos.filter(p=>p.date===selectedCalDate);
     if(dayPhotos.length){
       const d=new Date(selectedCalDate+'T00:00:00');
       const label=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
@@ -1863,7 +1926,7 @@ function renderMonthCalendarHtml(year,month){
 let viewerList=[],viewerIndex=0;
 function openViewer(id){
   const p=photos.find(x=>x.id===id);if(!p)return;
-  viewerList=[...photos].sort((a,b)=>a.date===b.date?a.time.localeCompare(b.time):a.date.localeCompare(b.date)).map(x=>x.id);
+  viewerList=[...galleryPhotos()].sort((a,b)=>a.date===b.date?a.time.localeCompare(b.time):a.date.localeCompare(b.date)).map(x=>x.id);
   viewerIndex=viewerList.indexOf(id);
   loadViewerPhoto(id);
   document.getElementById('viewer').classList.add('open');
@@ -2081,7 +2144,7 @@ function getStreakDates(){
 }
 
 function calDayClick(dateStr){
-  const dayPhotos=photos.filter(p=>p.date===dateStr);
+  const dayPhotos=galleryPhotos().filter(p=>p.date===dateStr);
   if(dayPhotos.length===0)return;
   openDaySummary(dateStr);
 }
@@ -2095,7 +2158,7 @@ function openPhotoFromCal(id){
 }
 
 function openDaySummary(dateStr){
-  const dayPhotos=photos.filter(p=>p.date===dateStr).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  const dayPhotos=galleryPhotos().filter(p=>p.date===dateStr).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
   if(dayPhotos.length===0)return;
   const d=new Date(dateStr+'T00:00:00');
   const days=['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
@@ -2153,7 +2216,7 @@ function openMonthPhotoList(){
   const base=new Date(now.getFullYear(),now.getMonth()+calMonthOffset,1);
   const year=base.getFullYear(),month=base.getMonth();
   const monthKeyStr=`${year}-${String(month+1).padStart(2,'0')}`;
-  const monthPhotos=photos.filter(p=>p.date.startsWith(monthKeyStr));
+  const monthPhotos=galleryPhotos().filter(p=>p.date.startsWith(monthKeyStr));
   const monthNames=['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
   const photoCount=monthPhotos.filter(p=>p.dataUrl&&!p.manual).length;
   document.getElementById('ml-title').textContent=`${monthNames[month]} ${year} · 📷 ${photoCount}`;
@@ -2333,7 +2396,7 @@ function todoLeadOf(t){return typeof t.remind==='number'?t.remind:TODO_LEAD_MIN;
 function todoModeLabel(t){
   if(t.mode==='daily')return'Hằng ngày';
   if(t.mode==='days'){const n=['CN','T2','T3','T4','T5','T6','T7'];return(t.days||[]).map(d=>n[d]).join(', ');}
-  return t.date||'';
+  return (t.date||'')+(t.until&&t.until!==t.date?' → '+t.until:'');
 }
 function todoReminderRows(){
   const st=todoReadLocal();
@@ -2920,9 +2983,10 @@ function todoTasksOn(st,ds){
   const dow=new Date(ds+'T00:00:00').getDay();
   return st.tasks.filter(t=>{
     if(t.mode!=='once'&&t.from&&ds<t.from)return false;
+    if(t.until&&ds>t.until)return false;
     if(t.mode==='daily')return true;
     if(t.mode==='days')return Array.isArray(t.days)&&t.days.indexOf(dow)>-1;
-    return t.date===ds;
+    return t.until?(ds>=t.date&&ds<=t.until):t.date===ds;
   }).sort((a,b)=>(a.start-b.start)||(a.end-b.end));
 }
 function todoFmt(m){return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
@@ -4373,6 +4437,8 @@ dialog::backdrop{background:rgba(70,40,110,.45);backdrop-filter:blur(3px)}
 .f input:focus,.f select:focus,.f textarea:focus{border-color:var(--accent)}
 .cats span{border-color:color-mix(in srgb,var(--c) 55%,var(--line));background:var(--surface)}
 .cats span i{display:none}
+.cats{gap:10px}
+.cats span{width:44px;height:44px;padding:0;justify-content:center;font-size:20px;border-radius:50%}
 .cats input:checked+span{background:color-mix(in srgb,var(--c) 35%,var(--surface))}
 .days span{width:40px;height:40px;border-radius:50%}
 .cell{border-radius:14px;border-color:transparent;background:color-mix(in srgb,var(--line) 55%,var(--surface))}
@@ -4403,9 +4469,6 @@ dialog::backdrop{background:rgba(70,40,110,.45);backdrop-filter:blur(3px)}
 .tabs button{padding:8px 6px;font-size:13.5px;white-space:nowrap}
 /* ---- Xem theo tuần ---- */
 .wv{display:flex;flex-direction:column;gap:16px}
-.wsum{background:var(--p2);border-radius:22px;padding:14px 16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px}
-.wsum .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;font-weight:800}
-.wsum .top small{color:var(--muted);font-weight:600;font-size:13.5px}
 .wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
 .wday{background:var(--surface);border-radius:22px;box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .wday.tdy{outline:3px solid var(--accent);outline-offset:2px}
@@ -4477,6 +4540,7 @@ button,[role=button],input,select,label{-webkit-tap-highlight-color:transparent;
   .legend{font-size:12px}
   .tl-wrap .legend{padding-left:40px}
   .row2{gap:10px}
+  .row2 input[type=date]{padding-left:8px;padding-right:8px;font-size:14px}
   dialog{width:100%;max-width:100%;margin:auto 0 0;border-radius:28px 28px 0 0;max-height:92vh;max-height:92dvh}
   .dlg{padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px))}
 }
@@ -4521,7 +4585,6 @@ button,[role=button],input,select,label{-webkit-tap-highlight-color:transparent;
         <button type="button" id="wNext" aria-label="Tuần sau">›</button>
       </div>
     </div>
-    <div class="wsum" id="wSum"></div>
     <div class="wgrid" id="wGrid"></div>
   </section>
 
@@ -4596,8 +4659,10 @@ button,[role=button],input,select,label{-webkit-tap-highlight-color:transparent;
       </select>
     </div>
     <div class="f" id="daysWrap" hidden><span class="lb">Các ngày trong tuần</span><div class="days" id="days"></div></div>
-    <div class="f" id="fDateWrap"><label for="fDate">Ngày thực hiện</label><input type="date" id="fDate"></div>
-    <div class="f" id="fFromWrap" hidden><label for="fFrom">Áp dụng từ ngày</label><input type="date" id="fFrom"></div>
+    <div class="row2">
+      <div class="f"><label for="fDate">Ngày thực hiện</label><input type="date" id="fDate"></div>
+      <div class="f"><label for="fUntil">Ngày kết thúc</label><input type="date" id="fUntil"></div>
+    </div>
     <div class="f">
       <label for="fRemind">Nhắc trước giờ bắt đầu</label>
       <select id="fRemind">
@@ -4680,9 +4745,10 @@ button,[role=button],input,select,label{-webkit-tap-highlight-color:transparent;
     var dow=fromIso(dateStr).getDay();
     return state.tasks.filter(function(t){
       if(t.mode!=='once'&&t.from&&dateStr<t.from)return false;
+      if(t.until&&dateStr>t.until)return false;
       if(t.mode==='daily')return true;
       if(t.mode==='days')return t.days.indexOf(dow)>-1;
-      return t.date===dateStr;
+      return t.until?(dateStr>=t.date&&dateStr<=t.until):t.date===dateStr;
     }).sort(function(a,b){return a.start-b.start||a.end-b.end;});
   }
   function isDone(t){return !!state.done[cur+'|'+t.id];}
@@ -4807,7 +4873,7 @@ button,[role=button],input,select,label{-webkit-tap-highlight-color:transparent;
   var dlg=$('dlg');
   function buildForm(){
     $('cats').innerHTML=CATS.map(function(c,i){
-      return '<label><input type="radio" name="cat" value="'+c.id+'"'+(i===0?' checked':'')+'><span style="--c:var(--'+c.id+')"><i></i>'+c.em+' '+c.name+'</span></label>';
+      return '<label title="'+c.name+'"><input type="radio" name="cat" value="'+c.id+'" aria-label="'+c.name+'"'+(i===0?' checked':'')+'><span style="--c:var(--'+c.id+')"><i></i>'+c.em+'</span></label>';
     }).join('');
     $('days').innerHTML=DAYORDER.map(function(d){
       return '<label><input type="checkbox" name="dow" value="'+d+'"><span>'+DAYSHORT[d]+'</span></label>';
@@ -4816,7 +4882,7 @@ button,[role=button],input,select,label{-webkit-tap-highlight-color:transparent;
   }
   function setCat(v){var r=document.querySelector('input[name=cat][value="'+v+'"]');if(r)r.checked=true;}
   function getCat(){var r=document.querySelector('input[name=cat]:checked');return r?r.value:'work';}
-  function syncMode(){var m=$('fMode').value;$('daysWrap').hidden=m!=='days';$('fDateWrap').hidden=m!=='once';$('fFromWrap').hidden=m==='once';}
+  function syncMode(){var m=$('fMode').value;$('daysWrap').hidden=m!=='days';}
 
   function openDlg(task,startMin){
     editing=task||null;
@@ -4830,8 +4896,8 @@ button,[role=button],input,select,label{-webkit-tap-highlight-color:transparent;
     $('fStart').value=fmt(s);$('fEnd').value=fmt(e);
     setCat(task?task.cat:'work');
     $('fMode').value=task?task.mode:'once';
-    $('fDate').value=(task&&task.mode==='once'&&task.date)?task.date:cur;
-    $('fFrom').value=task?(task.from||''):cur;
+    $('fDate').value=task?((task.mode==='once'?task.date:task.from)||cur):cur;
+    $('fUntil').value=task?(task.until||''):'';
     var chk=document.querySelectorAll('input[name=dow]');
     for(var i=0;i<chk.length;i++){chk[i].checked=!!task&&task.mode==='days'&&task.days.indexOf(+chk[i].value)>-1;}
     $('fNote').value=task?task.note:'';
@@ -4856,12 +4922,14 @@ button,[role=button],input,select,label{-webkit-tap-highlight-color:transparent;
     if(!title)err='Hãy nhập tên công việc.';
     else if(isNaN(s)||isNaN(e))err='Hãy chọn giờ bắt đầu và giờ kết thúc.';
     else if(e<=s)err='Giờ kết thúc phải sau giờ bắt đầu.';
-    else if(mode==='once'&&!$('fDate').value)err='Hãy chọn ngày thực hiện.';
+    else if(!$('fDate').value)err='Hãy chọn ngày thực hiện.';
+    else if($('fUntil').value&&$('fUntil').value<$('fDate').value)err='Ngày kết thúc phải sau hoặc trùng ngày thực hiện.';
     else if(mode==='days'&&!days.length)err='Hãy chọn ít nhất một ngày trong tuần.';
     if(err){$('err').textContent=err;return;}
     var data={title:title,start:s,end:e,cat:getCat(),mode:mode,days:mode==='days'?days:[],note:$('fNote').value.trim(),remind:+$('fRemind').value};
     if(mode==='once'){data.date=$('fDate').value;cur=data.date;}
-    else if($('fFrom').value){data.from=$('fFrom').value;}
+    else{data.from=$('fDate').value;}
+    if($('fUntil').value)data.until=$('fUntil').value;
     if(editing){
       var i=state.tasks.indexOf(editing);
       data.id=editing.id;
@@ -5142,16 +5210,6 @@ button,[role=button],input,select,label{-webkit-tap-highlight-color:transparent;
       }
       return h+'</article>';
     });
-    var pctW=planned?Math.round(done/planned*100):0;
-    var s;
-    if(!elapsed){
-      s='<div class="top"><span>🗓️ '+plannedAll+' việc dự kiến</span><small>Tuần này chưa bắt đầu</small></div>';
-    } else if(!planned){
-      s='<div class="top"><span>🌱 Chưa có việc nào</span><small>Thêm việc ở giao diện theo ngày</small></div>';
-    } else {
-      s='<div class="top"><span>🎯 '+done+'/'+planned+' việc xong'+(done===planned?' 🎉':'')+'</span><small>'+dur(doneMin)+' trên '+dur(plannedMin)+' dự kiến</small></div><div class="bar" role="progressbar" aria-label="Tiến độ trong tuần" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pctW+'"><i style="width:'+pctW+'%"></i></div>';
-    }
-    $('wSum').innerHTML=s;
     $('wGrid').innerHTML=weekTable(days,today);
   }
 
