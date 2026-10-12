@@ -436,6 +436,8 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .task-streak{font-size:11.5px;color:var(--text3);margin-top:2px}
 .task-streak.active{color:var(--accent2);font-weight:600}
 .task-check-today{width:26px;height:26px;border-radius:50%;border:2px solid var(--tc-soft,#cfd3e8);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--tc,#a7acc9);background:#fff}
+.task-item.done-today .task-title{text-decoration:line-through;text-decoration-color:var(--text3)}
+.task-item.done-today .task-total-done{text-decoration:none;display:inline-block}
 .task-check-today.done{background:var(--tc,#8B9DE0);border-color:transparent;color:#fff}
 .task-day{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1}
 .tdd-dot{width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid var(--tc-soft,#cfd3e8);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--tc,#a7acc9)}
@@ -3700,7 +3702,6 @@ function renderTasksScreen(){
   const activeTasks=tasks.filter(t=>!(t.endDate&&today>t.endDate));
   const sorted=[...activeTasks].sort((a,b)=>taskStreak(taskDoneDates(b))-taskStreak(taskDoneDates(a))||b.createdAt-a.createdAt);
   if(!sorted.length){
-    html+=`<div class="task-empty">Không có nhiệm vụ đang hoạt động.<br>Các chuỗi đã đến hạn được lưu ở mục "🕘 Lịch sử".</div>`;
     el.innerHTML=html;
     return;
   }
@@ -3762,13 +3763,15 @@ function renderTasksScreen(){
     });
     const rowCls='task-days-row'+(displayDates.length>7?' scrollable':'');
     const totalDone=taskDoneDates(t).length;
-    return`<div class="task-item"${colorStyle}>
+    const doneToday=set.has(today);
+    return`<div class="task-item${doneToday?' done-today':''}"${colorStyle}>
       <div class="task-item-top">
         <div class="task-main">
           <div class="task-title">${t.text.replace(/</g,'&lt;')} <span class="task-total-done">${totalDone} ngày</span></div>
           ${rangeLabel}
           ${countdownLabel}
         </div>
+        <div class="task-check-today${doneToday?' done':''}${outOfRange?' disabled':''}" role="button" aria-pressed="${doneToday}" aria-label="Đánh dấu hoàn thành hôm nay: ${t.text.replace(/"/g,'&quot;').replace(/</g,'&lt;')}" ${outOfRange?'':`onclick="toggleTaskToday('${t.id}')"`}>${doneToday?'✓':''}</div>
         <button class="task-edit" onclick="openEditTask('${t.id}')">✏️</button>
         <button class="task-del" onclick="deleteTask('${t.id}')">🗑️</button>
       </div>
@@ -3845,7 +3848,7 @@ function renderTasksCalendarHtml(){
   <div class="cal-weekdays"><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span></div>
   <div class="cal-grid tcal-grid">${grid}</div>
   ${panel}
-  ${list.length?`<div class="tcal-legend">${list.map(({t})=>`<div class="tcal-legend-item"><span class="tcal-dot" style="background:${taskColor(t.id).done}"></span>${t.text.replace(/</g,'&lt;')}</div>`).join('')}</div>`:`<div class="task-empty">Không có nhiệm vụ đang hoạt động.<br>Các chuỗi đã đến hạn được lưu ở mục "🕘 Lịch sử".</div>`}`;
+  ${list.length?`<div class="tcal-legend">${list.map(({t})=>`<div class="tcal-legend-item"><span class="tcal-dot" style="background:${taskColor(t.id).done}"></span>${t.text.replace(/</g,'&lt;')}</div>`).join('')}</div>`:''}`;
 }
 
 function openAnalysis(){
