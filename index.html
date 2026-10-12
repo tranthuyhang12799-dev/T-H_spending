@@ -2324,6 +2324,8 @@ function fireReminderNotification(){
 }
 /* ====== NHẮC TO DO TRƯỚC 10 PHÚT ====== */
 const TODO_LEAD_MIN=10; // mặc định cho việc mới / việc chưa có cài đặt
+const TODO_NOTIFIED_KEY='th_todo_notified';
+let todoNotifyTimer=null;
 const TODO_REMIND_OPTS=[0,5,10,15,20,30,45,60];
 function todoLeadOf(t){return typeof t.remind==='number'?t.remind:TODO_LEAD_MIN;}
 function todoModeLabel(t){
