@@ -447,7 +447,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .task-day:not(.done):not(.future):not(.today) .tdd-dot{background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.35);color:#ef4444;font-size:10px}
 .task-day.today:not(.done) .tdd-dot{background:rgba(239,68,68,0.10);border-color:rgba(239,68,68,0.4);color:#ef4444;font-size:10px}
 .task-day.date-editable{cursor:pointer}
-.task-day.date-editable .tdd-dot{box-shadow:0 0 0 2px rgba(var(--accent-rgb),0.4);transform:scale(1.08)}
+.task-day.today.date-editable .tdd-dot{box-shadow:0 0 0 2px rgba(var(--accent-rgb),0.4);transform:scale(1.08)}
 .task-edit-active{color:var(--accent)!important;opacity:1!important}
 .task-date-edit-hint{font-size:11px;color:var(--accent);margin:4px 0 -4px 2px;opacity:0.85}
 .task-total-done{display:inline-block;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-dim);border-radius:8px;padding:2px 7px;margin-left:6px;vertical-align:middle}
@@ -3495,6 +3495,7 @@ function toggleTaskToday(id){
 function toggleTaskDate(id,ds){
   const t=tasks.find(x=>x.id===id);
   if(!t)return;
+  if(ds>toDateStr(new Date()))return;
   const idx=t.doneDates.indexOf(ds);
   if(idx>=0)t.doneDates.splice(idx,1);
   else t.doneDates.push(ds);
@@ -3753,11 +3754,11 @@ function renderTasksScreen(){
       if(isDone)cls+=' done';
       if(isToday)cls+=' today';
       if(isFuture)cls+=' future';
-      // Chỉ ô "hôm nay" mới bấm trực tiếp để tick/bỏ tick được; các ngày khác
-      // (quá khứ/tương lai) muốn sửa phải vào chế độ chỉnh sửa (nút bút chì).
-      const todayClickable=isToday&&!outOfRange;
-      if(todayClickable)cls+=' date-editable';
-      const click=todayClickable?`onclick="toggleTaskToday('${t.id}')"`:'';
+      // Bấm trực tiếp vào ô hôm nay hoặc các ngày đã qua để tick/bỏ tick (tick được nhiều ngày);
+      // ngày chưa tới thì không bấm được.
+      const clickable=!isFuture&&!(isToday&&outOfRange);
+      if(clickable)cls+=' date-editable';
+      const click=clickable?`onclick="toggleTaskDate('${t.id}','${ds}')"`:'';
       const dot=isFuture?'·':(isDone?'✓':'✕');
       days+=`<div class="${cls}" ${click}><span class="tdd-dot">${dot}</span><span class="tdd-label">${dayLabels[d.getDay()]}</span><span class="tdd-date">${d.getDate()}</span></div>`;
     });
