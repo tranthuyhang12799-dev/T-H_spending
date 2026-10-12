@@ -2248,6 +2248,8 @@ function renderReminderUI(){
       <div class="reminder-task-list">${todoReminderRows()}</div>
       <div class="reminder-note">Việc mới thêm trong To do tự động nhắc trước 10 phút; bạn cũng có thể chỉnh ngay trong form thêm/sửa việc.</div>
     </div>
+    <div class="reminder-note" style="margin-top:10px">Trạng thái quyền thông báo: <b>${perm==='granted'?'✅ Đã cấp':perm==='denied'?'⛔ Bị chặn':'❔ Chưa cấp'}</b></div>
+    <button class="reminder-save-btn" style="margin-top:8px;background:var(--surface2);color:var(--text)" onclick="testTodoReminder()">🔔 Gửi thử thông báo (sau 10 giây)</button>
     ${perm==='denied'?`<div class="reminder-note">⚠️ Trình duyệt đang chặn thông báo. Vào cài đặt trình duyệt để cấp quyền.</div>`:''}
     ${!hasPerm?`<div class="reminder-note">Trình duyệt này không hỗ trợ thông báo.</div>`:''}
     <button class="reminder-save-btn" onclick="saveReminderSettings()">Lưu cài đặt</button>
@@ -2389,11 +2391,29 @@ function startTodoNotify(){
 }
 function todoShowNotification(title,body,tag){
   const opts={body,icon:'icon-192.png',badge:'icon-192.png',tag,renotify:false,requireInteraction:true,vibrate:[400,200,400,200,400],data:{url:'./'}};
-  // Android/PWA yêu cầu hiện thông báo qua service worker (new Notification() không chạy được)
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.ready.then(reg=>reg.showNotification(title,opts))
-      .catch(()=>{try{new Notification(title,opts);}catch(e){}});
-  }else{try{new Notification(title,opts);}catch(e){}}
+  const fallback=()=>{try{new Notification(title,opts);}catch(e){console.warn('Notification lỗi',e);}};
+  if(!('serviceWorker' in navigator))return fallback();
+  let done=false;
+  const guard=setTimeout(()=>{if(!done){done=true;fallback();}},1500); // tránh treo khi chưa có service worker
+  navigator.serviceWorker.getRegistration().then(reg=>{
+    if(done)return;
+    if(!reg){done=true;clearTimeout(guard);return fallback();}
+    return reg.showNotification(title,opts).then(()=>{done=true;clearTimeout(guard);});
+  }).catch(()=>{if(!done){done=true;clearTimeout(guard);fallback();}});
+}
+function testTodoReminder(){
+  if(!('Notification' in window)){showToast('⚠️ Thiết bị này không hỗ trợ thông báo');return;}
+  const run=()=>{
+    showToast('⏳ Hãy khoá màn hình hoặc thoát app, thông báo sẽ đến sau 10 giây');
+    setTimeout(()=>{
+      const start=new Date().getHours()*60+new Date().getMinutes()+10;
+      todoRaiseAlarm({id:0,title:'Thử báo thức',start},10,'test-'+Date.now());
+    },10000);
+  };
+  if(Notification.permission==='granted')run();
+  else if(Notification.permission==='default'){
+    Notification.requestPermission().then(p=>{if(p==='granted')run();else{showToast('⚠️ Bạn chưa cấp quyền thông báo');renderReminderUI();}});
+  }else showToast('⚠️ Trình duyệt đang chặn thông báo, hãy mở lại quyền trong cài đặt');
 }
 function checkTodoReminders(){
   const cfg=loadReminderCfg();
@@ -4326,6 +4346,7 @@ dialog::backdrop{background:rgba(8,14,26,.55)}
 .now b{border-radius:99px;padding:1px 8px}
 .fab{background:linear-gradient(135deg,#FFB3D1,#C4B0FF);color:#3B2D63;font-weight:800;box-shadow:0 8px 22px rgba(160,110,220,.4);animation:bob 3.2s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.fab{width:54px;height:54px;padding:0;gap:0;justify-content:center;border-radius:50%}
 .fab:active,.btn:active,.nav button:active{transform:scale(.95)}
 .btn{border-radius:99px;font-weight:800}
 .btn.primary{background:linear-gradient(135deg,#FFB3D1,#C4B0FF);border-color:transparent;color:#3B2D63}
@@ -4512,7 +4533,7 @@ button,[role=button],input,select,label{-webkit-tap-highlight-color:transparent;
   <button class="reset" type="button" id="reset" hidden>Xoá toàn bộ dữ liệu</button>
 </footer>
 
-<button class="fab" type="button" id="add"><span aria-hidden="true" style="font-size:20px;line-height:1">+</span> Thêm việc</button>
+<button class="fab" type="button" id="add" aria-label="Thêm việc" title="Thêm việc"><span aria-hidden="true" style="font-size:28px;line-height:1;font-weight:700">+</span></button>
 
 <dialog id="cdlg" aria-labelledby="cTitle">
   <div class="dlg">
