@@ -193,7 +193,18 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .vs-frame.prev{--off:calc(var(--step,312px) * -1)}
 .vs-frame.next{--off:var(--step,312px)}
 .viewer-stage.vs-anim .vs-frame{transition:transform .24s cubic-bezier(.2,.8,.2,1)}
-.vs-frame img{width:100%;height:100%;object-fit:contain;display:block;will-change:transform;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
+.vs-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;will-change:transform;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
+.vs-frame img.vs-blur{display:none}
+/* CHẾ ĐỘ TOÀN MÀN HÌNH: chạm vào ảnh bo tròn 1 lần để mở */
+#viewer.full .viewer-top{position:absolute;left:0;right:0;top:0;z-index:3;padding-bottom:28px;background:linear-gradient(to bottom,rgba(0,0,0,0.6),transparent);transition:opacity .2s}
+#viewer.full .viewer-stage{position:absolute;inset:0;z-index:1;flex:none}
+#viewer.full .vs-frame{left:0;top:0;width:100%;height:100%;margin:0;border-radius:0;box-shadow:none;background:transparent}
+#viewer.full .vs-frame img.vs-blur{display:block;object-fit:cover;filter:blur(28px) brightness(0.55) saturate(1.2);transform:scale(1.15);pointer-events:none}
+#viewer.full .viewer-bottom{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:36px 20px 0;background:linear-gradient(to top,rgba(0,0,0,0.68) 55%,transparent);transition:opacity .2s}
+#viewer.full .viewer-top,#viewer.full .viewer-bottom{pointer-events:none}
+#viewer.full .viewer-top button,#viewer.full .viewer-bottom button,#viewer.full .viewer-bottom a,#viewer.full .viewer-strip{pointer-events:auto}
+#viewer.full.ui-hidden .viewer-top,#viewer.full.ui-hidden .viewer-bottom{opacity:0}
+#viewer.full.ui-hidden .viewer-top *,#viewer.full.ui-hidden .viewer-bottom *{pointer-events:none!important}
 .viewer-bottom{padding:6px 20px 0;flex-shrink:0;text-align:center}
 .vm-time{font-size:22px;font-weight:500;letter-spacing:.5px;color:rgba(255,255,255,0.55);padding:10px 0 2px}
 .viewer-caption{font-size:14px;color:rgba(255,255,255,0.88);min-height:0;line-height:1.4;padding:4px 8px 0}
@@ -767,7 +778,7 @@ body.locket-mode .ds-sheet-btn.money-only{display:none!important}
 
 <div id="viewer">
   <div class="viewer-top">
-    <button class="viewer-close" onclick="closeViewer()" aria-label="Đóng"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+    <button class="viewer-close" onclick="viewerBack()" aria-label="Đóng"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
     <div class="viewer-meta">
       <div class="vm-year" id="vm-year"></div>
       <div class="vm-date" id="vm-date"></div>
@@ -775,9 +786,9 @@ body.locket-mode .ds-sheet-btn.money-only{display:none!important}
     <button class="viewer-share" onclick="sharePhoto()" aria-label="Chia sẻ"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5M5 12v6a2 2 0 002 2h10a2 2 0 002-2v-6"/></svg></button>
   </div>
   <div class="viewer-stage" id="viewer-stage">
-    <div class="vs-frame prev" id="vs-prev"><img alt="" draggable="false"></div>
-    <div class="vs-frame cur" id="vs-cur"><img id="viewer-img" src="" alt="" draggable="false"></div>
-    <div class="vs-frame next" id="vs-next"><img alt="" draggable="false"></div>
+    <div class="vs-frame prev" id="vs-prev"><img class="vs-blur" alt="" draggable="false"><img class="vs-main" alt="" draggable="false"></div>
+    <div class="vs-frame cur" id="vs-cur"><img class="vs-blur" alt="" draggable="false"><img class="vs-main" id="viewer-img" src="" alt="" draggable="false"></div>
+    <div class="vs-frame next" id="vs-next"><img class="vs-blur" alt="" draggable="false"><img class="vs-main" alt="" draggable="false"></div>
   </div>
   <div class="viewer-bottom">
     <div class="vm-time" id="vm-time"></div>
@@ -2032,6 +2043,7 @@ function loadViewerPhoto(id){
   const p=photos.find(x=>x.id===id);if(!p)return;
   currentViewerId=id;
   document.getElementById('viewer-img').src=p.dataUrl;
+  const blurEl=document.querySelector('#vs-cur .vs-blur');if(blurEl)blurEl.src=p.dataUrl;
   document.getElementById('viewer-caption').textContent=p.caption||'';
   viewerZoomReset();
   const amountEl=document.getElementById('viewer-amount');
@@ -2068,11 +2080,37 @@ function loadViewerPhoto(id){
 }
 
 // ====== GIAO DIỆN XEM ẢNH KIỂU LOCKET ======
-let vStripStart=-1,vStripEnd=-1,vsLock=false;
+let vStripStart=-1,vStripEnd=-1,vsLock=false,vTapTimer=null;
+function enterViewerFull(){
+  const v=document.getElementById('viewer');
+  v.classList.remove('ui-hidden');v.classList.add('full');
+  viewerZoomReset();vsSetDx(0,false);layoutViewerStage();
+}
+function exitViewerFull(){
+  const v=document.getElementById('viewer');
+  v.classList.remove('full','ui-hidden');
+  viewerZoomReset();vsSetDx(0,false);layoutViewerStage();
+}
+function viewerBack(){
+  const v=document.getElementById('viewer');
+  if(v&&v.classList.contains('full'))exitViewerFull();else closeViewer();
+}
+function toggleViewerUI(){const v=document.getElementById('viewer');if(v)v.classList.toggle('ui-hidden');}
+function onViewerTap(x,y){
+  const v=document.getElementById('viewer');
+  if(v.classList.contains('full')){toggleViewerUI();return;}
+  const cur=document.getElementById('vs-cur');
+  const r=cur&&cur.getBoundingClientRect();
+  if(r&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom&&viewerZoom<=1)enterViewerFull();
+}
 function layoutViewerStage(){
   const st=document.getElementById('viewer-stage');if(!st)return;
   const w=st.clientWidth,h=st.clientHeight;
   if(!w||!h)return;
+  if(document.getElementById('viewer').classList.contains('full')){
+    st.style.setProperty('--step',w+'px');
+    return;
+  }
   const fs=Math.max(120,Math.min(w*0.86,h-8));
   st.style.setProperty('--fs',fs+'px');
   st.style.setProperty('--step',(fs+12)+'px');
@@ -2100,11 +2138,11 @@ function vsFinishDrag(dx,dy){
 function setViewerNeighbors(){
   const set=(frameId,idx)=>{
     const fr=document.getElementById(frameId);if(!fr)return;
-    const img=fr.querySelector('img');
+    const imgs=fr.querySelectorAll('img');
     const pid=viewerList[idx];
     const pp=pid?photos.find(x=>x.id===pid):null;
-    if(pp){img.src=pp.dataUrl;fr.style.visibility='visible';}
-    else{img.removeAttribute('src');fr.style.visibility='hidden';}
+    if(pp){imgs.forEach(im=>{im.src=pp.dataUrl;});fr.style.visibility='visible';}
+    else{imgs.forEach(im=>im.removeAttribute('src'));fr.style.visibility='hidden';}
   };
   set('vs-prev',viewerIndex-1);
   set('vs-next',viewerIndex+1);
@@ -2172,7 +2210,7 @@ function updateViewerNavBtns(){
   if(nextBtn)nextBtn.disabled=viewerIndex>=viewerList.length-1;
 }
 
-function closeViewer(){document.getElementById('viewer').classList.remove('open');currentViewerId=null;viewerList=[];viewerIndex=0;vStripStart=-1;vStripEnd=-1;vsLock=false;vsSetDx(0,false);viewerZoomReset();}
+function closeViewer(){document.getElementById('viewer').classList.remove('open','full','ui-hidden');currentViewerId=null;viewerList=[];viewerIndex=0;vStripStart=-1;vStripEnd=-1;vsLock=false;vsSetDx(0,false);viewerZoomReset();}
 
 // ====== VIEWER ZOOM / PAN ======
 let viewerZoom=1,viewerPanX=0,viewerPanY=0;
@@ -2212,6 +2250,7 @@ function viewerPointerDown(e){
   }else if(vPointers.size===1){
     const now=Date.now();
     if(now-vLastTap<300){
+      clearTimeout(vTapTimer);
       if(viewerZoom>1)viewerZoomReset();
       else{viewerZoom=2.5;applyViewerTransform();}
       vLastTap=0;
@@ -2247,6 +2286,9 @@ function viewerPointerMove(e){
   }
 }
 function viewerPointerUp(e){
+  let tapDx=null,tapDy=null;
+  if(vPointers.size===1&&vDragStart){tapDx=e.clientX-vDragStart.x;tapDy=e.clientY-vDragStart.y;}
+  const upX=e.clientX,upY=e.clientY;
   let canSwipe=false,deltaX=0,deltaY=0;
   if(vPointers.size===1&&viewerZoom<=1&&vDragStart){
     deltaX=e.clientX-vDragStart.x;
@@ -2264,6 +2306,7 @@ function viewerPointerUp(e){
   if(viewerZoom<=1){viewerPanX=0;viewerPanY=0;}
   applyViewerTransform();
   if(canSwipe)vsFinishDrag(deltaX,deltaY);
+  if(tapDx!==null&&e.type==='pointerup'&&Math.abs(tapDx)<8&&Math.abs(tapDy)<8){clearTimeout(vTapTimer);vTapTimer=setTimeout(()=>onViewerTap(upX,upY),280);}
 }
 
 (function bindViewerGestures(){
@@ -2360,97 +2403,18 @@ function openPhotoFromCal(id){
   openViewer(id);
 }
 
+// Bỏ bước lưới ảnh theo ngày: bấm vào ngày là mở thẳng trình xem ảnh kiểu Locket,
+// bắt đầu từ ảnh đầu tiên của ngày đó (vuốt/dải ảnh nhỏ để sang ảnh và ngày khác).
 function openDaySummary(dateStr){
   const dayPhotos=galleryPhotos().filter(p=>p.date===dateStr).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
   if(dayPhotos.length===0)return;
-  const d=new Date(dateStr+'T00:00:00');
-  const days=['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
-  document.getElementById('ds-title').textContent=`${days[d.getDay()]}, ngày ${d.getDate()} thg ${d.getMonth()+1}, ${d.getFullYear()}`;
-
-  const dayExpense=dayPhotos.filter(p=>p.moneyType==='expense').reduce((s,p)=>s+(p.amount||0),0);
-  const dayIncome=dayPhotos.filter(p=>p.moneyType==='income').reduce((s,p)=>s+(p.amount||0),0);
-  const totalEl=document.getElementById('ds-total');
-  if(dayExpense>0&&dayIncome===0){
-    totalEl.className='ds-total expense';
-    totalEl.textContent=`↗ ${maskAmount(formatVND(dayExpense))}`;
-  }else if(dayIncome>0&&dayExpense===0){
-    totalEl.className='ds-total income';
-    totalEl.textContent=`↙ ${maskAmount(formatVND(dayIncome))}`;
-  }else if(dayExpense>0||dayIncome>0){
-    const net=dayIncome-dayExpense;
-    totalEl.className=`ds-total ${net<0?'expense':net>0?'income':'mixed'}`;
-    totalEl.textContent=`${net<0?'↗':'↙'} ${maskAmount(formatVND(Math.abs(net)))}`;
-  }else{
-    totalEl.className='ds-total mixed';
-    totalEl.textContent='0đ';
-  }
-
-  const scroll=document.getElementById('ds-scroll');
-  scroll.innerHTML=dayPhotos.map(p=>{
-    const info=p.category?getCatInfo(p.moneyType,p.category):null;
-    const catLabel=info?info.label:(p.moneyType==='income'?'Thu nhập':'Chi tiêu');
-    const catColor=info?info.color:'#6b7280';
-    const sign=p.moneyType==='expense'?'-':'+';
-    const imgSrc=p.dataUrl||'';
-    return`<div class="ds-card" onclick="closeDaySummary();openViewer('${p.id}')">
-      ${imgSrc?`<img src="${imgSrc}" alt="" loading="lazy">`:''}
-      <div class="ds-card-pill" style="background:${catColor}">${catLabel}</div>
-      <div class="ds-card-amount">${maskAmount(sign+formatVND(p.amount||0))}</div>
-    </div>`;
-  }).join('');
-  dsCurrentDate=dateStr;
-  // Ngày đã qua (hoặc hôm nay): thêm thẻ "+" để bổ sung ảnh từ máy hoặc tự nhập
-  if(dateStr<=toDateStr(new Date())){
-    scroll.innerHTML+=`<div class="ds-card-add" onclick="openDsSheet()">+</div>`;
-  }
-  document.getElementById('daysummary').classList.add('open');
-  scroll.scrollTop=0;
+  openViewer(dayPhotos[0].id);
 }
 function closeDaySummary(){
   closeDsSheet();
   document.getElementById('daysummary').classList.remove('open');
 }
 
-// ====== VUỐT TRÁI/PHẢI để chuyển sang ngày khác (chỉ nhảy tới ngày có ảnh) ======
-function dsAnimate(cls){
-  ['ds-scroll','ds-title','ds-total'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el)return;
-    el.classList.remove('ds-anim-next','ds-anim-prev','ds-bounce-l','ds-bounce-r');
-    void el.offsetWidth;
-    el.classList.add(cls);
-  });
-}
-function dsNavigate(dir){ // dir=+1: ngày sau (vuốt trái), -1: ngày trước (vuốt phải)
-  if(!dsCurrentDate)return;
-  const dates=[...new Set(galleryPhotos().map(p=>p.date))].sort();
-  const target=dir>0?dates.find(d=>d>dsCurrentDate):[...dates].reverse().find(d=>d<dsCurrentDate);
-  if(!target){
-    dsAnimate(dir>0?'ds-bounce-l':'ds-bounce-r');
-    showToast(dir>0?'Đây là ngày mới nhất có ảnh':'Đây là ngày đầu tiên có ảnh');
-    return;
-  }
-  openDaySummary(target);
-  dsAnimate(dir>0?'ds-anim-next':'ds-anim-prev');
-}
-(function bindDaySummarySwipe(){
-  const el=document.getElementById('daysummary');
-  if(!el)return;
-  let sx=0,sy=0,tracking=false;
-  el.addEventListener('touchstart',e=>{
-    const sheetOpen=document.querySelector('.ds-sheet.open');
-    tracking=e.touches.length===1&&!sheetOpen;
-    if(tracking){sx=e.touches[0].clientX;sy=e.touches[0].clientY;}
-  },{passive:true});
-  el.addEventListener('touchmove',e=>{if(e.touches.length>1)tracking=false;},{passive:true});
-  el.addEventListener('touchend',e=>{
-    if(!tracking)return;
-    tracking=false;
-    const t=e.changedTouches[0];
-    const dx=t.clientX-sx,dy=t.clientY-sy;
-    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5)dsNavigate(dx<0?1:-1);
-  },{passive:true});
-})();
 function openDsSheet(){document.getElementById('ds-sheet').classList.add('open');}
 function closeDsSheet(){const e=document.getElementById('ds-sheet');if(e)e.classList.remove('open');}
 function dsAddFromLibrary(){const ds=dsCurrentDate;closeDsSheet();pickFromLibrary(ds);}
@@ -4390,7 +4354,7 @@ document.addEventListener('keydown',(e)=>{
   if(!document.getElementById('viewer').classList.contains('open'))return;
   if(e.key==='ArrowRight')viewerNext();
   else if(e.key==='ArrowLeft')viewerPrev();
-  else if(e.key==='Escape')closeViewer();
+  else if(e.key==='Escape')viewerBack();
 });
 document.addEventListener('DOMContentLoaded',()=>{
   showAppLockScreen();
