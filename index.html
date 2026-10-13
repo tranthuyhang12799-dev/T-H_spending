@@ -2162,7 +2162,9 @@ function layoutViewerStage(){
   st.style.setProperty('--step',(bw+12)+'px');
   resizeAllViewerFrames();
 }
-const vAspectCache={};
+// Mọi khung ảnh trong trình xem có CÙNG kích thước dọc (rộng/cao ≈ 0.69, giống ảnh chụp từ khung camera).
+// Ảnh khác tỉ lệ (VD ảnh vuông chụp từ bản cũ) được cắt giữa cho vừa khung; mở toàn màn hình để xem đủ ảnh.
+const VIEW_ASPECT=0.69;
 function vFitBox(a){
   const st=document.getElementById('viewer-stage');
   const bw=parseFloat(st.style.getPropertyValue('--bw'))||300,bh=parseFloat(st.style.getPropertyValue('--bh'))||300;
@@ -2173,47 +2175,15 @@ function applyFrameAspect(fr,a){
   fr.style.setProperty('--fw',fw+'px');
   fr.style.setProperty('--fh',fh+'px');
 }
-// Đọc tỉ lệ rộng/cao trực tiếp từ phần đầu file JPEG (đồng bộ) để khung đúng hình ngay, không bị vuông lúc đầu
-function dataUrlAspect(u){
-  try{
-    if(!u||u.indexOf('data:image/jpeg')!==0)return 0;
-    const st=u.indexOf(',')+1;
-    let b64=u.slice(st,st+80000);b64=b64.slice(0,b64.length-(b64.length%4));
-    const bin=atob(b64);
-    let i=2;
-    while(i<bin.length-9){
-      if(bin.charCodeAt(i)!==0xFF){i++;continue;}
-      const m=bin.charCodeAt(i+1);
-      if(m>=0xC0&&m<=0xCF&&m!==0xC4&&m!==0xC8&&m!==0xCC){
-        const h=(bin.charCodeAt(i+5)<<8)|bin.charCodeAt(i+6);
-        const w=(bin.charCodeAt(i+7)<<8)|bin.charCodeAt(i+8);
-        return w&&h?w/h:0;
-      }
-      i+=2+((bin.charCodeAt(i+2)<<8)|bin.charCodeAt(i+3));
-    }
-  }catch(e){}
-  return 0;
-}
 function sizeFrameFor(frameId,photo){
-  const fr=document.getElementById(frameId);if(!fr||!photo)return;
-  fr.dataset.pid=photo.id;
-  if(!vAspectCache[photo.id]){const a0=dataUrlAspect(photo.dataUrl);if(a0>0)vAspectCache[photo.id]=a0;}
-  const c=vAspectCache[photo.id];
-  if(c){applyFrameAspect(fr,c);return;}
-  applyFrameAspect(fr,1);
-  const im=new Image();
-  im.onload=()=>{
-    if(!im.naturalWidth||!im.naturalHeight)return;
-    vAspectCache[photo.id]=im.naturalWidth/im.naturalHeight;
-    if(fr.dataset.pid===photo.id)applyFrameAspect(fr,vAspectCache[photo.id]);
-  };
-  im.src=photo.dataUrl;
+  const fr=document.getElementById(frameId);if(!fr)return;
+  fr.dataset.pid=photo?photo.id:'';
+  applyFrameAspect(fr,VIEW_ASPECT);
 }
 function resizeAllViewerFrames(){
   ['vs-prev','vs-cur','vs-next'].forEach(fid=>{
     const fr=document.getElementById(fid);
-    const a=fr&&fr.dataset.pid&&vAspectCache[fr.dataset.pid];
-    if(a)applyFrameAspect(fr,a);
+    if(fr)applyFrameAspect(fr,VIEW_ASPECT);
   });
 }
 window.addEventListener('resize',layoutViewerStage);
