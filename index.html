@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="T&H Spending">
@@ -47,8 +47,10 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .screen.active{display:flex}
 /* CAMERA */
 #s-camera{padding:12px 14px;gap:12px}
-.vf-wrap{flex:1;border-radius:24px;overflow:hidden;position:relative;background:#000;min-height:0}
-#video{width:100%;height:100%;object-fit:cover;display:block}
+.vf-wrap{flex:1;border-radius:24px;overflow:hidden;position:relative;background:#000;min-height:0;touch-action:none}
+.zoom-indicator{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);background:rgba(0,0,0,0.55);color:#FFD60A;font-size:14px;font-weight:700;padding:5px 12px;border-radius:16px;opacity:0;transition:opacity .25s;pointer-events:none;backdrop-filter:blur(4px)}
+.zoom-indicator.show{opacity:1}
+#video{width:100%;height:100%;object-fit:cover;display:block;will-change:transform;transform-origin:center center}
 .vf-overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:14px;pointer-events:none}
 .vf-top{display:flex;justify-content:space-between;align-items:center;pointer-events:all}
 .date-chip{background:rgba(0,0,0,0.55);border:0.5px solid rgba(255,255,255,0.12);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.88);backdrop-filter:blur(8px)}
@@ -337,7 +339,15 @@ body.locket-mode .ds-card-amount,
 body.locket-mode .money-row,
 body.locket-mode .fab-money-item,
 body.locket-mode .ds-sheet-btn.money-only{display:none!important}
-.lk-feed{display:flex;flex-direction:column;gap:16px}
+.lk-feed{display:grid;grid-template-columns:1fr;gap:16px}
+.lk-feed.lk-n2{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.lk-feed.lk-n3{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.lk-n2 .lk-card{border-radius:20px}
+.lk-n3 .lk-card{border-radius:14px}
+.lk-n3 .lk-card-info{padding:22px 7px 7px;flex-direction:column;align-items:flex-start;gap:3px}
+.lk-n3 .lk-card-cap{font-size:11px;-webkit-line-clamp:1}
+.lk-n3 .lk-card-time{font-size:10px;padding:2px 6px;border-radius:9px}
+.lk-n2 .lk-card-cap{font-size:12.5px}
 .lk-card{position:relative;border-radius:26px;overflow:hidden;background:var(--surface2);aspect-ratio:1/1;cursor:pointer;box-shadow:0 6px 18px var(--card-shadow)}
 .lk-card img{width:100%;height:100%;object-fit:cover;display:block}
 .lk-card-info{position:absolute;left:0;right:0;bottom:0;padding:34px 16px 14px;background:linear-gradient(to top,rgba(0,0,0,0.55),transparent);color:#fff;display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
@@ -1041,10 +1051,11 @@ async function startCamera(){
   try{
     if(stream)stream.getTracks().forEach(t=>t.stop());
     stream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode,width:{ideal:1920},height:{ideal:1920}},audio:false
+      video:{facingMode,width:{ideal:3840},height:{ideal:3840}},audio:false
     });
     wrap.innerHTML=`
       <video id="video" autoplay playsinline muted></video>
+      <div class="zoom-indicator" id="zoom-indicator">1×</div>
       <div class="vf-overlay">
         <div class="vf-top">
           <div class="date-chip" id="date-chip"></div>
@@ -1072,14 +1083,15 @@ async function startCamera(){
           </div>
           <input id="caption-input" type="text" placeholder="Thêm caption…" maxlength="80" oninput="onCaptionInput()">
           <div class="zoom-row">
-            <div class="zoom-pill" onclick="setZoom(0.5,this)">0.5×</div>
-            <div class="zoom-pill active" onclick="setZoom(1,this)">1×</div>
-            <div class="zoom-pill" onclick="setZoom(2,this)">2×</div>
+            <div class="zoom-pill" data-z="0.5" onclick="setZoom(0.5,this)">0.5×</div>
+            <div class="zoom-pill active" data-z="1" onclick="setZoom(1,this)">1×</div>
+            <div class="zoom-pill" data-z="2" onclick="setZoom(2,this)">2×</div>
           </div>
         </div>
       </div>`;
     document.getElementById('video').srcObject=stream;
     updateDateChip();
+    initCameraZoom();
   }catch(err){
     console.log('Camera error:',err.name,err.message);
     let msg='Không thể truy cập camera.';
@@ -1122,20 +1134,90 @@ function toggleFlash(e){
   }
 }
 
-function setZoom(level,el){
-  document.querySelectorAll('.zoom-pill').forEach(p=>p.classList.remove('active'));
-  el.classList.add('active');
-  if(stream){
-    const track=stream.getVideoTracks()[0];
-    if(track?.getCapabilities){
-      const caps=track.getCapabilities();
-      if(caps.zoom){
-        const z=Math.min(caps.zoom.max,Math.max(caps.zoom.min,level));
-        track.applyConstraints({advanced:[{zoom:z}]}).catch(()=>{});
-      }
+// ====== ZOOM CAMERA: chụm 2 ngón để zoom liên tục như camera điện thoại ======
+// Ưu tiên zoom phần cứng (Android/Chrome); nếu máy không hỗ trợ (vd. Safari iOS) thì zoom kỹ thuật số.
+let camZoom=1,camZoomMin=1,camZoomMax=5,camZoomHW=false,camZoomBusy=false,camZoomPending=null,camZoomHideT=null,camZoomBound=false;
+function camTrack(){return stream&&stream.getVideoTracks&&stream.getVideoTracks()[0];}
+function initCameraZoom(){
+  camZoomMin=1;camZoomMax=4;camZoomHW=false;camZoomBusy=false;camZoomPending=null;
+  try{
+    const track=camTrack();
+    const caps=track&&track.getCapabilities?track.getCapabilities():null;
+    if(caps&&caps.zoom&&caps.zoom.max>caps.zoom.min){
+      camZoomHW=true;camZoomMin=caps.zoom.min;camZoomMax=Math.min(caps.zoom.max,10);
     }
+  }catch(e){}
+  camZoom=Math.max(camZoomMin,1);
+  if(camZoomHW)sendHwZoom(camZoom);
+  // ẩn nút zoom không dùng được (vd. 0.5× khi camera không có góc siêu rộng)
+  document.querySelectorAll('.zoom-pill').forEach(pl=>{
+    const dz=parseFloat(pl.dataset.z);
+    pl.style.display=(dz<camZoomMin-0.01||dz>camZoomMax+0.01)?'none':'';
+  });
+  bindCameraZoomGestures();
+  updateZoomUI(false);
+}
+function sendHwZoom(z){
+  const track=camTrack();if(!track)return;
+  if(camZoomBusy){camZoomPending=z;return;}
+  camZoomBusy=true;
+  track.applyConstraints({advanced:[{zoom:z}]}).catch(()=>{}).finally(()=>{
+    camZoomBusy=false;
+    if(camZoomPending!=null){const n=camZoomPending;camZoomPending=null;sendHwZoom(n);}
+  });
+}
+function applyCamZoom(z){
+  z=Math.min(camZoomMax,Math.max(camZoomMin,z));
+  camZoom=z;
+  if(camZoomHW)sendHwZoom(z);
+  else{
+    const v=document.getElementById('video');
+    if(v&&v.tagName==='VIDEO')v.style.transform=`scale(${z})`;
+  }
+  updateZoomUI(true);
+}
+function updateZoomUI(show){
+  document.querySelectorAll('.zoom-pill').forEach(pl=>{
+    pl.classList.toggle('active',Math.abs(camZoom-parseFloat(pl.dataset.z))<0.05);
+  });
+  const ind=document.getElementById('zoom-indicator');
+  if(!ind)return;
+  ind.textContent=(Math.round(camZoom*10)/10).toFixed(1).replace('.0','')+'×';
+  if(show){
+    ind.classList.add('show');
+    clearTimeout(camZoomHideT);
+    camZoomHideT=setTimeout(()=>ind.classList.remove('show'),900);
   }
 }
+function bindCameraZoomGestures(){
+  const wrap=document.getElementById('vf-wrap');
+  if(!wrap||camZoomBound)return;
+  camZoomBound=true;
+  let startDist=0,startZoom=1;
+  const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+  const live=()=>{const v=document.getElementById('video');return !!v&&v.tagName==='VIDEO'&&!frozenDataUrl;};
+  wrap.addEventListener('touchstart',e=>{
+    if(e.touches.length===2&&live()){startDist=dist(e.touches);startZoom=camZoom;e.preventDefault();}
+  },{passive:false});
+  wrap.addEventListener('touchmove',e=>{
+    if(e.touches.length===2&&startDist>0&&live()){
+      e.preventDefault();
+      applyCamZoom(startZoom*dist(e.touches)/startDist);
+    }
+  },{passive:false});
+  wrap.addEventListener('touchend',e=>{if(e.touches.length<2)startDist=0;});
+  wrap.addEventListener('touchcancel',()=>{startDist=0;});
+  // iOS Safari: chặn zoom cả trang khi đang chụm trên khung camera
+  wrap.addEventListener('gesturestart',e=>e.preventDefault());
+  wrap.addEventListener('gesturechange',e=>e.preventDefault());
+  // Máy tính: lăn chuột để zoom thử
+  wrap.addEventListener('wheel',e=>{
+    if(!live())return;
+    e.preventDefault();
+    applyCamZoom(camZoom*(e.deltaY<0?1.1:1/1.1));
+  },{passive:false});
+}
+function setZoom(level){applyCamZoom(level);}
 
 function flipCamera(){
   const btn=document.getElementById('flip-btn');
@@ -1547,11 +1629,16 @@ function capturePhoto(){
     ctx.drawImage(video,0,0,srcW,srcH,0,0,srcW,srcH);
   }else{
     const size=Math.min(srcW,srcH);
-    canvas.width=size;canvas.height=size;
-    if(facingMode==='user'){ctx.translate(size,0);ctx.scale(-1,1);}
-    const xOff=(srcW-size)/2;
-    const yOff=(srcH-size)/2;
-    ctx.drawImage(video,xOff,yOff,size,size,0,0,size,size);
+    // zoom kỹ thuật số: cắt vùng giữa nhỏ hơn theo mức zoom (zoom phần cứng đã nằm sẵn trong khung hình)
+    const dz=(!camZoomHW&&camZoom>1)?camZoom:1;
+    const cropSize=size/dz;
+    const outSize=dz>1?Math.max(720,Math.round(Math.min(size,cropSize))):size;
+    canvas.width=outSize;canvas.height=outSize;
+    if(facingMode==='user'){ctx.translate(outSize,0);ctx.scale(-1,1);}
+    const xOff=(srcW-cropSize)/2;
+    const yOff=(srcH-cropSize)/2;
+    ctx.imageSmoothingQuality='high';
+    ctx.drawImage(video,xOff,yOff,cropSize,cropSize,0,0,outSize,outSize);
   }
   frozenDataUrl=sizeDataUrlForFirestore(canvas);
 
@@ -1806,7 +1893,7 @@ function renderDayListHtml(){
         <div class="lk-card-info"><div class="lk-card-cap">${cap}</div><div class="lk-card-time">${p.time||''}</div></div>
       </div>`;
     }).join('');
-    return nav+`<div class="lk-feed">${cards}</div>`;
+    return nav+`<div class="lk-feed lk-n${Math.min(sortedDayPhotos.length,3)}">${cards}</div>`;
   }
   const thumbs=sortedDayPhotos.map(p=>renderTxRowHtml(p)).join('');
   return nav+`<div class="tx-list">${thumbs}</div>`;
