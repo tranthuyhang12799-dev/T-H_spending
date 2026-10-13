@@ -183,18 +183,22 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 /* VIEWER */
 #viewer{position:fixed;inset:0;z-index:100;background:#1b1c1f;display:none;flex-direction:column;transition:background .3s}
 #viewer.open{display:flex}
-.viewer-top{padding:calc(var(--safe-top) + 10px) 12px 6px;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;flex-shrink:0}
-.viewer-close,.viewer-share{width:44px;height:44px;border:none;background:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent}
+.viewer-top{position:relative;padding:calc(var(--safe-top) + 10px) 12px 6px;display:grid;grid-template-columns:92px 1fr 92px;align-items:center;flex-shrink:0}
+.viewer-top .viewer-close{justify-self:start}
+.viewer-right{display:flex;justify-content:flex-end;align-items:center}
+.viewer-close,.viewer-share,.viewer-edit{width:44px;height:44px;border:none;background:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent}
 .viewer-meta{text-align:center}
 .viewer-meta .vm-year{font-size:15px;font-weight:600;color:rgba(255,255,255,0.55)}
 .viewer-meta .vm-date{font-size:21px;font-weight:700;color:#fff;margin-top:2px}
 .viewer-stage{flex:1;min-height:0;width:100%;position:relative;overflow:hidden;touch-action:none}
-.vs-frame{position:absolute;left:50%;top:50%;width:var(--fs,300px);height:var(--fs,300px);margin-left:calc(var(--fs,300px) / -2);margin-top:calc(var(--fs,300px) / -2);border-radius:calc(var(--fs,300px) * 0.17);overflow:hidden;background:rgba(255,255,255,0.06);transform:translate(calc(var(--dx,0px) + var(--off,0px)),var(--dy,0px));will-change:transform;box-shadow:0 12px 40px rgba(0,0,0,0.35);isolation:isolate;clip-path:inset(0 round calc(var(--fs,300px) * 0.17));-webkit-mask-image:-webkit-radial-gradient(white,black)}
+.vs-frame{position:absolute;left:50%;top:50%;width:var(--fw,var(--fs,300px));height:var(--fh,var(--fs,300px));margin-left:calc(var(--fw,var(--fs,300px)) / -2);margin-top:calc(var(--fh,var(--fs,300px)) / -2);border-radius:calc(var(--fs,300px) * 0.17);overflow:hidden;background:rgba(255,255,255,0.06);transform:translate(calc(var(--dx,0px) + var(--off,0px)),var(--dy,0px));will-change:transform;box-shadow:0 12px 40px rgba(0,0,0,0.35);isolation:isolate;clip-path:inset(0 round calc(var(--fs,300px) * 0.17));-webkit-mask-image:-webkit-radial-gradient(white,black)}
 .vs-frame.prev{--off:calc(var(--step,312px) * -1)}
 .vs-frame.next{--off:var(--step,312px)}
 .viewer-stage.vs-anim .vs-frame{transition:transform .24s cubic-bezier(.2,.8,.2,1)}
 .vs-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;will-change:transform;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
 .vs-frame img.vs-blur{display:none}
+.vs-frame img.vs-main{object-fit:cover}
+#viewer.full .vs-frame img.vs-main{object-fit:contain}
 /* CHẾ ĐỘ TOÀN MÀN HÌNH: chạm vào ảnh bo tròn 1 lần để mở */
 #viewer.full .viewer-top{position:absolute;left:0;right:0;top:0;z-index:3;padding-bottom:28px;background:linear-gradient(to bottom,rgba(0,0,0,0.6),transparent);transition:opacity .2s}
 #viewer.full .viewer-stage{position:absolute;inset:0;z-index:1;flex:none}
@@ -208,15 +212,16 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 #viewer.full.ui-hidden .viewer-top,#viewer.full.ui-hidden .viewer-bottom{opacity:0}
 #viewer.full.ui-hidden .viewer-top *,#viewer.full.ui-hidden .viewer-bottom *{pointer-events:none!important}
 .viewer-bottom{padding:6px 20px 0;flex-shrink:0;text-align:center}
-.vm-time{font-size:22px;font-weight:500;letter-spacing:.5px;color:rgba(255,255,255,0.55);padding:10px 0 2px}
+.vm-time{font-size:16px;font-weight:500;letter-spacing:.5px;color:rgba(255,255,255,0.6);margin-top:3px}
+.vm-time:empty{display:none}
 .viewer-caption{font-size:14px;color:rgba(255,255,255,0.88);min-height:0;line-height:1.4;padding:4px 8px 0}
 .viewer-caption:empty{display:none}
 .viewer-location{display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:12.5px;color:#38bdf8;text-decoration:none;background:rgba(56,189,248,0.12);border-radius:14px;padding:5px 12px}
-.viewer-actions{display:flex;gap:10px;margin-top:10px;justify-content:center}
-.va-btn{flex:0 0 auto;padding:8px 18px;border-radius:20px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
-.va-btn.delete{background:rgba(255,59,48,0.18);color:#ff6b61}
-.va-btn.share{background:var(--accent-dim);color:var(--accent)}
-.va-btn.expense-edit{background:rgba(255,255,255,0.12);color:#fff}
+.viewer-menu{display:none;position:absolute;right:12px;top:calc(var(--safe-top) + 58px);z-index:20;min-width:190px;background:#2b2c31;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.5);padding:6px;flex-direction:column;gap:2px}
+.viewer-menu.open{display:flex}
+.viewer-menu button{border:none;background:none;color:#fff;font-size:15px;font-weight:600;font-family:inherit;text-align:left;padding:12px 14px;border-radius:10px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.viewer-menu button:active{background:rgba(255,255,255,0.1)}
+.viewer-menu button.delete{color:#ff6b61}
 .viewer-strip{position:relative;display:flex;align-items:center;gap:14px;overflow-x:auto;overflow-y:hidden;padding:12px calc(50% - 40px) calc(var(--safe-bottom) + 14px);height:112px;box-sizing:border-box;-webkit-overflow-scrolling:touch;margin:0 -20px}
 .viewer-strip::-webkit-scrollbar{display:none}
 .vt{flex:0 0 auto;width:48px;height:48px;border-radius:12px;overflow:hidden;opacity:.85;cursor:pointer;box-sizing:border-box;background:rgba(255,255,255,0.08)}
@@ -784,8 +789,16 @@ body.locket-mode .ds-sheet-btn.money-only{display:none!important}
     <div class="viewer-meta">
       <div class="vm-year" id="vm-year"></div>
       <div class="vm-date" id="vm-date"></div>
+      <div class="vm-time" id="vm-time"></div>
     </div>
-    <button class="viewer-share" onclick="sharePhoto()" aria-label="Chia sẻ"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5M5 12v6a2 2 0 002 2h10a2 2 0 002-2v-6"/></svg></button>
+    <div class="viewer-right">
+      <button class="viewer-share" onclick="sharePhoto()" aria-label="Chia sẻ"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5M5 12v6a2 2 0 002 2h10a2 2 0 002-2v-6"/></svg></button>
+      <button class="viewer-edit" id="viewer-edit-btn" onclick="toggleViewerMenu(event)" aria-label="Chỉnh sửa" aria-haspopup="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
+    </div>
+    <div class="viewer-menu" id="viewer-menu">
+      <button id="viewer-expense-btn" onclick="closeViewerMenu();openExpenseEdit(currentViewerId)">💰 Thêm chi tiêu</button>
+      <button class="delete" onclick="closeViewerMenu();deletePhoto()">🗑️ Xoá</button>
+    </div>
   </div>
   <button class="viewer-full-x" onclick="exitViewerFull()" aria-label="Thoát toàn màn hình"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
   <div class="viewer-stage" id="viewer-stage">
@@ -794,14 +807,9 @@ body.locket-mode .ds-sheet-btn.money-only{display:none!important}
     <div class="vs-frame next" id="vs-next"><img class="vs-blur" alt="" draggable="false"><img class="vs-main" alt="" draggable="false"></div>
   </div>
   <div class="viewer-bottom">
-    <div class="vm-time" id="vm-time"></div>
     <div class="viewer-caption" id="viewer-caption"></div>
     <div class="viewer-amount" id="viewer-amount" style="display:none"></div>
     <a class="viewer-location" id="viewer-location" style="display:none" target="_blank" rel="noopener">📍 Xem trên Google Maps</a>
-    <div class="viewer-actions">
-      <button class="va-btn expense-edit" id="viewer-expense-btn" onclick="openExpenseEdit(currentViewerId)">💰 Thêm chi tiêu</button>
-      <button class="va-btn delete" onclick="deletePhoto()">Xoá</button>
-    </div>
     <div class="viewer-strip" id="viewer-strip"></div>
   </div>
 </div>
@@ -1648,17 +1656,23 @@ function capturePhoto(){
     canvas.width=srcW;canvas.height=srcH;
     ctx.drawImage(video,0,0,srcW,srcH,0,0,srcW,srcH);
   }else{
-    const size=Math.min(srcW,srcH);
+    // Cắt đúng vùng đang thấy trong khung camera (object-fit:cover) để ảnh chụp ra giống hệt khung
+    const vfw=document.getElementById('vf-wrap');
+    let ASPECT=vfw&&vfw.clientWidth&&vfw.clientHeight?vfw.clientWidth/vfw.clientHeight:0.8;
+    ASPECT=Math.min(2,Math.max(0.4,ASPECT));
+    let cropW,cropH;
+    if(srcW/srcH>ASPECT){cropH=srcH;cropW=srcH*ASPECT;}else{cropW=srcW;cropH=srcW/ASPECT;}
     // zoom kỹ thuật số: cắt vùng giữa nhỏ hơn theo mức zoom (zoom phần cứng đã nằm sẵn trong khung hình)
     const dz=(!camZoomHW&&camZoom>1)?camZoom:1;
-    const cropSize=size/dz;
-    const outSize=dz>1?Math.max(720,Math.round(Math.min(size,cropSize))):size;
-    canvas.width=outSize;canvas.height=outSize;
-    if(facingMode==='user'){ctx.translate(outSize,0);ctx.scale(-1,1);}
-    const xOff=(srcW-cropSize)/2;
-    const yOff=(srcH-cropSize)/2;
+    cropW/=dz;cropH/=dz;
+    const outW=Math.round(dz>1?Math.max(720,cropW):cropW);
+    const outH=Math.round(outW/ASPECT);
+    canvas.width=outW;canvas.height=outH;
+    if(facingMode==='user'){ctx.translate(outW,0);ctx.scale(-1,1);}
+    const xOff=(srcW-cropW)/2;
+    const yOff=(srcH-cropH)/2;
     ctx.imageSmoothingQuality='high';
-    ctx.drawImage(video,xOff,yOff,cropSize,cropSize,0,0,outSize,outSize);
+    ctx.drawImage(video,xOff,yOff,cropW,cropH,0,0,outW,outH);
   }
   frozenDataUrl=sizeDataUrlForFirestore(canvas);
 
@@ -1794,7 +1808,7 @@ function toggleLocketMode(){
   closeDaySummary&&closeDaySummary();
   renderGallery();
   if(document.getElementById('s-stats')&&document.getElementById('s-stats').classList.contains('active'))renderStats();
-  showToast(locketMode?'Đã bật chế độ Locket 📸 — ẩn toàn bộ số tiền':'Đã tắt chế độ Locket');
+  showToast(locketMode?'Đã bật chế độ ảnh 📸 — ẩn toàn bộ số tiền':'Đã tắt chế độ ảnh');
 }
 applyLocketClass();
 function greetingParts(){
@@ -1853,7 +1867,7 @@ function renderGallery(){
       </div>
       ${galleryViewMode==='month'?`<div class="gh-photo-count" onclick="openMonthPhotoList()" style="cursor:pointer">📷 <b>${monthPhotoCount}</b></div>`:''}
     </div>
-    <button class="gh-locket-btn${locketMode?' active':''}" onclick="toggleLocketMode()" aria-pressed="${locketMode}" aria-label="Chế độ Locket: ẩn số tiền và chi tiêu" title="Chế độ Locket">${locketMode?'📸':'💸'}</button>
+    <button class="gh-locket-btn${locketMode?' active':''}" onclick="toggleLocketMode()" aria-pressed="${locketMode}" aria-label="Chế độ ảnh: ẩn số tiền và chi tiêu" title="Chế độ ảnh">${locketMode?'📸':'💸'}</button>
   </div>
   ${locketMode?'':`<div class="gh-summary-row">
     <div class="gh-summary-card expense"><div class="gh-summary-icon expense">↗</div><div class="gh-summary-body"><div class="gh-summary-label">Chi</div><div class="gh-summary-val">${maskAmount('-'+formatVND(monthExpense))}</div></div><button class="gh-summary-eye" onclick="toggleAmountsHidden()">${amountsHidden?'🙈':'👁️'}</button></div>
@@ -2042,9 +2056,19 @@ function openViewer(id){
   loadViewerPhoto(id);
 }
 
+function toggleViewerMenu(e){if(e)e.stopPropagation();const m=document.getElementById('viewer-menu');if(m)m.classList.toggle('open');}
+function closeViewerMenu(){const m=document.getElementById('viewer-menu');if(m)m.classList.remove('open');}
+document.addEventListener('pointerdown',function(e){
+  const m=document.getElementById('viewer-menu');
+  if(!m||!m.classList.contains('open'))return;
+  if(m.contains(e.target)||e.target.closest('#viewer-edit-btn'))return;
+  m.classList.remove('open');
+},true);
 function loadViewerPhoto(id){
+  closeViewerMenu();
   const p=photos.find(x=>x.id===id);if(!p)return;
   currentViewerId=id;
+  sizeFrameFor('vs-cur',p);
   document.getElementById('viewer-img').src=p.dataUrl;
   const blurEl=document.querySelector('#vs-cur .vs-blur');if(blurEl)blurEl.src=p.dataUrl;
   document.getElementById('viewer-caption').textContent=p.caption||'';
@@ -2130,9 +2154,45 @@ function layoutViewerStage(){
     st.style.setProperty('--step',w+'px');
     return;
   }
-  const fs=Math.max(120,Math.min(w*0.86,h-8));
-  st.style.setProperty('--fs',fs+'px');
-  st.style.setProperty('--step',(fs+12)+'px');
+  // Khung ảnh tự theo tỉ lệ của từng tấm ảnh, nằm gọn trong vùng bw x bh
+  const bw=Math.max(120,w*0.86),bh=Math.max(150,h-8);
+  st.style.setProperty('--bw',bw+'px');
+  st.style.setProperty('--bh',bh+'px');
+  st.style.setProperty('--fs',bw+'px');
+  st.style.setProperty('--step',(bw+12)+'px');
+  resizeAllViewerFrames();
+}
+const vAspectCache={};
+function vFitBox(a){
+  const st=document.getElementById('viewer-stage');
+  const bw=parseFloat(st.style.getPropertyValue('--bw'))||300,bh=parseFloat(st.style.getPropertyValue('--bh'))||300;
+  return bw/bh>a?[bh*a,bh]:[bw,bw/a];
+}
+function applyFrameAspect(fr,a){
+  const [fw,fh]=vFitBox(a);
+  fr.style.setProperty('--fw',fw+'px');
+  fr.style.setProperty('--fh',fh+'px');
+}
+function sizeFrameFor(frameId,photo){
+  const fr=document.getElementById(frameId);if(!fr||!photo)return;
+  fr.dataset.pid=photo.id;
+  const c=vAspectCache[photo.id];
+  if(c){applyFrameAspect(fr,c);return;}
+  applyFrameAspect(fr,1);
+  const im=new Image();
+  im.onload=()=>{
+    if(!im.naturalWidth||!im.naturalHeight)return;
+    vAspectCache[photo.id]=im.naturalWidth/im.naturalHeight;
+    if(fr.dataset.pid===photo.id)applyFrameAspect(fr,vAspectCache[photo.id]);
+  };
+  im.src=photo.dataUrl;
+}
+function resizeAllViewerFrames(){
+  ['vs-prev','vs-cur','vs-next'].forEach(fid=>{
+    const fr=document.getElementById(fid);
+    const a=fr&&fr.dataset.pid&&vAspectCache[fr.dataset.pid];
+    if(a)applyFrameAspect(fr,a);
+  });
 }
 window.addEventListener('resize',layoutViewerStage);
 function vsSetDx(dx,animate){
@@ -2170,7 +2230,7 @@ function setViewerNeighbors(){
     const imgs=fr.querySelectorAll('img');
     const pid=viewerList[idx];
     const pp=pid?photos.find(x=>x.id===pid):null;
-    if(pp){imgs.forEach(im=>{im.src=pp.dataUrl;});fr.style.visibility='visible';}
+    if(pp){sizeFrameFor(frameId,pp);imgs.forEach(im=>{im.src=pp.dataUrl;});fr.style.visibility='visible';}
     else{imgs.forEach(im=>im.removeAttribute('src'));fr.style.visibility='hidden';}
   };
   set('vs-prev',viewerIndex-1);
