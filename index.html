@@ -231,19 +231,19 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .ds-total.expense{color:#fb923c}
 .ds-total.income{color:#4ade80}
 .ds-total.mixed{color:#fff}
-.ds-scroll{display:flex;gap:12px;overflow-x:auto;padding:0 16px calc(var(--safe-bottom) + 20px);-webkit-overflow-scrolling:touch;flex:1;align-content:flex-start}
+.ds-scroll{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;overflow-x:hidden;overflow-y:auto;padding:0 16px calc(var(--safe-bottom) + 20px);-webkit-overflow-scrolling:touch;flex:1;min-height:0;align-content:start;align-items:start}
 .ds-scroll::-webkit-scrollbar{display:none}
-.ds-card{flex-shrink:0;width:132px;height:132px;position:relative;border-radius:16px;overflow:hidden;background:#1c1c1f;cursor:pointer}
+.ds-card{width:100%;aspect-ratio:1/1;position:relative;border-radius:16px;overflow:hidden;background:#1c1c1f;cursor:pointer}
 .ds-card img{width:100%;height:100%;object-fit:cover;display:block}
-.ds-card-add{flex-shrink:0;width:132px;height:132px;border-radius:16px;border:1.5px dashed rgba(255,255,255,0.35);background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:300;color:#fff;cursor:pointer}
+.ds-card-add{width:100%;aspect-ratio:1/1;border-radius:16px;border:1.5px dashed rgba(255,255,255,0.35);background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:300;color:#fff;cursor:pointer}
 .ds-sheet{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,0.55);display:none;align-items:flex-end}
 .ds-sheet.open{display:flex}
 .ds-sheet-card{width:100%;background:#1c1c1f;border-radius:20px 20px 0 0;padding:14px 16px calc(var(--safe-bottom) + 16px);display:flex;flex-direction:column;gap:8px}
 .ds-sheet-btn{background:rgba(255,255,255,0.08);border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:600;color:#fff;font-family:inherit;cursor:pointer}
 .ds-sheet-btn.cancel{background:transparent;color:rgba(255,255,255,0.6);font-weight:500}
 .ds-card::after{content:'';position:absolute;left:0;right:0;bottom:0;height:55%;background:linear-gradient(to top,rgba(0,0,0,0.7),transparent);pointer-events:none}
-.ds-card-pill{position:absolute;top:8px;left:8px;font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:20px;color:#fff;z-index:1;white-space:nowrap}
-.ds-card-amount{position:absolute;left:9px;bottom:8px;font-size:13px;font-weight:700;color:#fff;z-index:1}
+.ds-card-pill{position:absolute;top:6px;left:6px;max-width:calc(100% - 12px);overflow:hidden;text-overflow:ellipsis;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;color:#fff;z-index:1;white-space:nowrap}
+.ds-card-amount{position:absolute;left:8px;right:6px;bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:700;color:#fff;z-index:1}
 /* STATS */
 #s-stats{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px calc(var(--safe-bottom) + 14px);gap:16px;align-items:stretch}
 #s-stats::-webkit-scrollbar{display:none}
@@ -767,7 +767,7 @@ body.locket-mode .ds-sheet-btn.money-only{display:none!important}
   </div>
   <div class="viewer-dots" id="viewer-dots"></div>
   <div class="viewer-stage" id="viewer-stage">
-    <img id="viewer-img" src="" alt="" draggable="false" onpointerdown="viewerPointerDown(event)" onpointermove="viewerPointerMove(event)" onpointerup="viewerPointerUp(event)" onpointercancel="viewerPointerUp(event)">
+    <img id="viewer-img" src="" alt="" draggable="false">
     <button class="viewer-nav-btn left" id="viewer-prev-btn" onclick="viewerPrev()">‹</button>
     <button class="viewer-nav-btn right" id="viewer-next-btn" onclick="viewerNext()">›</button>
     <div class="viewer-zoom-controls">
@@ -1143,7 +1143,8 @@ function initCameraZoom(){
   try{
     const track=camTrack();
     const caps=track&&track.getCapabilities?track.getCapabilities():null;
-    if(caps&&caps.zoom&&caps.zoom.max>caps.zoom.min){
+    const st=track&&track.getSettings?track.getSettings():{};
+    if(caps&&caps.zoom&&caps.zoom.max>caps.zoom.min&&typeof st.zoom==='number'){
       camZoomHW=true;camZoomMin=caps.zoom.min;camZoomMax=Math.min(caps.zoom.max,10);
     }
   }catch(e){}
@@ -2090,6 +2091,7 @@ let vPointers=new Map(),vStartDist=0,vStartZoom=1,vDragging=false,vDragStart=nul
 function applyViewerTransform(){
   const img=document.getElementById('viewer-img');
   if(!img)return;
+  img.style.transition=vPointers.size>0?'none':'';
   img.style.transform=`translate(${viewerPanX}px,${viewerPanY}px) scale(${viewerZoom})`;
   img.style.cursor=viewerZoom>1?'grab':'default';
   const resetBtn=document.getElementById('vz-reset-btn');
@@ -2106,6 +2108,7 @@ function viewerZoomReset(){
   applyViewerTransform();
 }
 function viewerPointerDown(e){
+  if(e.target.closest&&e.target.closest('button,a'))return;
   const stage=document.getElementById('viewer-stage');
   try{stage.setPointerCapture(e.pointerId);}catch(err){}
   vPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -2136,7 +2139,7 @@ function viewerPointerMove(e){
     const pts=[...vPointers.values()];
     const dist=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
     if(vStartDist>0){
-      viewerZoom=Math.min(VZ_MAX,Math.max(VZ_MIN,Math.round(vStartZoom*(dist/vStartDist)*10)/10));
+      viewerZoom=Math.min(VZ_MAX,Math.max(VZ_MIN,vStartZoom*(dist/vStartDist)));
       applyViewerTransform();
     }
   }else if(vDragging&&vPointers.size===1){
@@ -2153,14 +2156,32 @@ function viewerPointerUp(e){
     deltaY=e.clientY-vDragStart.y;
     canSwipe=true;
   }
+  const wasTracked=vPointers.has(e.pointerId);
   vPointers.delete(e.pointerId);
   if(vPointers.size<2)vStartDist=0;
   vDragging=false;
-  if(viewerZoom<=1){viewerPanX=0;viewerPanY=0;applyViewerTransform();}
+  if(wasTracked&&vPointers.size===1&&viewerZoom>1){
+    const rp=[...vPointers.values()][0];
+    vDragging=true;vDragStart={x:rp.x,y:rp.y};vPanStart={x:viewerPanX,y:viewerPanY};
+  }
+  if(viewerZoom<=1){viewerPanX=0;viewerPanY=0;}
+  applyViewerTransform();
   if(canSwipe&&Math.abs(deltaX)>60&&Math.abs(deltaX)>Math.abs(deltaY)*1.5){
     if(deltaX<0)viewerNext();else viewerPrev();
   }
 }
+
+(function bindViewerGestures(){
+  const stage=document.getElementById('viewer-stage');
+  if(!stage)return;
+  stage.addEventListener('pointerdown',viewerPointerDown);
+  stage.addEventListener('pointermove',viewerPointerMove);
+  stage.addEventListener('pointerup',viewerPointerUp);
+  stage.addEventListener('pointercancel',viewerPointerUp);
+  stage.addEventListener('gesturestart',e=>e.preventDefault());
+  stage.addEventListener('gesturechange',e=>e.preventDefault());
+  stage.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
+})();
 
 function deletePhoto(){
   if(!currentViewerId)return;
