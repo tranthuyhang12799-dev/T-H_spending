@@ -189,7 +189,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .viewer-meta .vm-year{font-size:15px;font-weight:600;color:rgba(255,255,255,0.55)}
 .viewer-meta .vm-date{font-size:21px;font-weight:700;color:#fff;margin-top:2px}
 .viewer-stage{flex:1;min-height:0;width:100%;position:relative;overflow:hidden;touch-action:none}
-.vs-frame{position:absolute;left:50%;top:50%;width:var(--fs,300px);height:var(--fs,300px);margin-left:calc(var(--fs,300px) / -2);margin-top:calc(var(--fs,300px) / -2);border-radius:calc(var(--fs,300px) * 0.17);overflow:hidden;background:rgba(255,255,255,0.06);transform:translateX(calc(var(--dx,0px) + var(--off,0px)));will-change:transform;box-shadow:0 12px 40px rgba(0,0,0,0.35)}
+.vs-frame{position:absolute;left:50%;top:50%;width:var(--fs,300px);height:var(--fs,300px);margin-left:calc(var(--fs,300px) / -2);margin-top:calc(var(--fs,300px) / -2);border-radius:calc(var(--fs,300px) * 0.17);overflow:hidden;background:rgba(255,255,255,0.06);transform:translate(calc(var(--dx,0px) + var(--off,0px)),var(--dy,0px));will-change:transform;box-shadow:0 12px 40px rgba(0,0,0,0.35);isolation:isolate;clip-path:inset(0 round calc(var(--fs,300px) * 0.17));-webkit-mask-image:-webkit-radial-gradient(white,black)}
 .vs-frame.prev{--off:calc(var(--step,312px) * -1)}
 .vs-frame.next{--off:var(--step,312px)}
 .viewer-stage.vs-anim .vs-frame{transition:transform .24s cubic-bezier(.2,.8,.2,1)}
@@ -198,10 +198,12 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 /* CHẾ ĐỘ TOÀN MÀN HÌNH: chạm vào ảnh bo tròn 1 lần để mở */
 #viewer.full .viewer-top{position:absolute;left:0;right:0;top:0;z-index:3;padding-bottom:28px;background:linear-gradient(to bottom,rgba(0,0,0,0.6),transparent);transition:opacity .2s}
 #viewer.full .viewer-stage{position:absolute;inset:0;z-index:1;flex:none}
-#viewer.full .vs-frame{left:0;top:0;width:100%;height:100%;margin:0;border-radius:0;box-shadow:none;background:transparent}
+#viewer.full .vs-frame{left:0;top:0;width:100%;height:100%;margin:0;border-radius:0;box-shadow:none;background:transparent;clip-path:none;-webkit-mask-image:none}
 #viewer.full .vs-frame img.vs-blur{display:block;object-fit:cover;filter:blur(28px) brightness(0.55) saturate(1.2);transform:scale(1.15);pointer-events:none}
 #viewer.full .viewer-bottom{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:36px 20px 0;background:linear-gradient(to top,rgba(0,0,0,0.68) 55%,transparent);transition:opacity .2s}
-#viewer.full .viewer-top,#viewer.full .viewer-bottom{pointer-events:none}
+#viewer.full .viewer-top,#viewer.full .viewer-bottom{display:none}
+.viewer-full-x{display:none;position:absolute;top:calc(var(--safe-top) + 10px);left:12px;z-index:4;width:40px;height:40px;border-radius:50%;border:none;background:rgba(0,0,0,0.45);color:#fff;align-items:center;justify-content:center;padding:0;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#viewer.full .viewer-full-x{display:flex}
 #viewer.full .viewer-top button,#viewer.full .viewer-bottom button,#viewer.full .viewer-bottom a,#viewer.full .viewer-strip{pointer-events:auto}
 #viewer.full.ui-hidden .viewer-top,#viewer.full.ui-hidden .viewer-bottom{opacity:0}
 #viewer.full.ui-hidden .viewer-top *,#viewer.full.ui-hidden .viewer-bottom *{pointer-events:none!important}
@@ -785,6 +787,7 @@ body.locket-mode .ds-sheet-btn.money-only{display:none!important}
     </div>
     <button class="viewer-share" onclick="sharePhoto()" aria-label="Chia sẻ"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5M5 12v6a2 2 0 002 2h10a2 2 0 002-2v-6"/></svg></button>
   </div>
+  <button class="viewer-full-x" onclick="exitViewerFull()" aria-label="Thoát toàn màn hình"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
   <div class="viewer-stage" id="viewer-stage">
     <div class="vs-frame prev" id="vs-prev"><img class="vs-blur" alt="" draggable="false"><img class="vs-main" alt="" draggable="false"></div>
     <div class="vs-frame cur" id="vs-cur"><img class="vs-blur" alt="" draggable="false"><img class="vs-main" id="viewer-img" src="" alt="" draggable="false"></div>
@@ -2080,16 +2083,29 @@ function loadViewerPhoto(id){
 }
 
 // ====== GIAO DIỆN XEM ẢNH KIỂU LOCKET ======
-let vStripStart=-1,vStripEnd=-1,vsLock=false,vTapTimer=null;
+let vStripStart=-1,vStripEnd=-1,vsLock=false,vTapTimer=null,vAxis=null;
+function isViewerFull(){const v=document.getElementById('viewer');return !!v&&v.classList.contains('full');}
+function vsSetDy(dy,animate){
+  const st=document.getElementById('viewer-stage');if(!st)return;
+  st.classList.toggle('vs-anim',!!animate);
+  st.style.setProperty('--dy',dy+'px');
+}
 function enterViewerFull(){
   const v=document.getElementById('viewer');
   v.classList.remove('ui-hidden');v.classList.add('full');
-  viewerZoomReset();vsSetDx(0,false);layoutViewerStage();
+  viewerZoomReset();vsSetDx(0,false);vsSetDy(0,false);layoutViewerStage();
 }
 function exitViewerFull(){
   const v=document.getElementById('viewer');
   v.classList.remove('full','ui-hidden');
-  viewerZoomReset();vsSetDx(0,false);layoutViewerStage();
+  viewerZoomReset();vsSetDx(0,false);vsSetDy(0,false);vAxis=null;layoutViewerStage();
+  // Safari iOS đôi khi không vẽ lại phần cắt bo góc sau khi đổi chế độ -> ép vẽ lại
+  const frames=v.querySelectorAll('.vs-frame');
+  frames.forEach(f=>{f.style.display='none';});
+  void v.offsetHeight;
+  frames.forEach(f=>{f.style.display='';});
+  layoutViewerStage();
+  requestAnimationFrame(()=>{layoutViewerStage();});
 }
 function viewerBack(){
   const v=document.getElementById('viewer');
@@ -2098,7 +2114,10 @@ function viewerBack(){
 function toggleViewerUI(){const v=document.getElementById('viewer');if(v)v.classList.toggle('ui-hidden');}
 function onViewerTap(x,y){
   const v=document.getElementById('viewer');
-  if(v.classList.contains('full')){toggleViewerUI();return;}
+  if(v.classList.contains('full')){
+    if(viewerZoom>1)viewerZoomReset();
+    return;
+  }
   const cur=document.getElementById('vs-cur');
   const r=cur&&cur.getBoundingClientRect();
   if(r&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom&&viewerZoom<=1)enterViewerFull();
@@ -2126,6 +2145,16 @@ function vsStep(){
   return parseFloat(st&&st.style.getPropertyValue('--step'))||(st?st.clientWidth:300);
 }
 function vsFinishDrag(dx,dy){
+  if(isViewerFull()&&vAxis==='y'){
+    vAxis=null;
+    if(Math.abs(dy)>90){
+      vsLock=true;
+      vsSetDy(Math.sign(dy)*window.innerHeight,true);
+      setTimeout(()=>{vsSetDy(0,false);vsLock=false;exitViewerFull();},220);
+    }else vsSetDy(0,true);
+    return;
+  }
+  vAxis=null;
   const step=vsStep();
   let dir=0;
   if(Math.abs(dx)>Math.abs(dy)*1.2&&Math.abs(dx)>Math.min(70,step*0.2))dir=dx<0?1:-1;
@@ -2210,7 +2239,7 @@ function updateViewerNavBtns(){
   if(nextBtn)nextBtn.disabled=viewerIndex>=viewerList.length-1;
 }
 
-function closeViewer(){document.getElementById('viewer').classList.remove('open','full','ui-hidden');currentViewerId=null;viewerList=[];viewerIndex=0;vStripStart=-1;vStripEnd=-1;vsLock=false;vsSetDx(0,false);viewerZoomReset();}
+function closeViewer(){document.getElementById('viewer').classList.remove('open','full','ui-hidden');currentViewerId=null;viewerList=[];viewerIndex=0;vStripStart=-1;vStripEnd=-1;vsLock=false;vsSetDx(0,false);vsSetDy(0,false);vAxis=null;viewerZoomReset();}
 
 // ====== VIEWER ZOOM / PAN ======
 let viewerZoom=1,viewerPanX=0,viewerPanY=0;
@@ -2258,6 +2287,7 @@ function viewerPointerDown(e){
       return;
     }
     vLastTap=now;
+    vAxis=null;
     vDragging=viewerZoom>1;
     vDragStart={x:e.clientX,y:e.clientY};
     vPanStart={x:viewerPanX,y:viewerPanY};
@@ -2281,8 +2311,15 @@ function viewerPointerMove(e){
   }else if(vPointers.size===1&&viewerZoom<=1&&vDragStart&&!vsLock){
     // kéo ngang: ảnh trượt theo ngón tay, thấy ảnh kế bên
     const dx=e.clientX-vDragStart.x;
-    const edge=(viewerIndex<=0&&dx>0)||(viewerIndex>=viewerList.length-1&&dx<0);
-    if(Math.abs(dx)>4)vsSetDx(edge?dx*0.3:dx,false);
+    const dy=e.clientY-vDragStart.y;
+    const full=isViewerFull();
+    if(full&&!vAxis&&(Math.abs(dx)>8||Math.abs(dy)>8))vAxis=Math.abs(dy)>Math.abs(dx)?'y':'x';
+    if(full&&vAxis==='y'){
+      vsSetDy(dy,false);
+    }else{
+      const edge=(viewerIndex<=0&&dx>0)||(viewerIndex>=viewerList.length-1&&dx<0);
+      if(Math.abs(dx)>4)vsSetDx(edge?dx*0.3:dx,false);
+    }
   }
 }
 function viewerPointerUp(e){
