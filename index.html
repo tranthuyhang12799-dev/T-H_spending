@@ -365,7 +365,7 @@ body.locket-mode .ds-card-amount,
 body.locket-mode .money-row,
 body.locket-mode .fab-money-item,
 body.locket-mode .ds-sheet-btn.money-only{display:none!important}
-.lk-feed{display:grid;grid-template-columns:1fr;gap:16px}
+.lk-feed{display:grid;grid-template-columns:1fr;gap:16px;align-items:start}
 .lk-feed.lk-n2{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .lk-feed.lk-n3{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .lk-n2 .lk-card{border-radius:20px}
@@ -374,8 +374,8 @@ body.locket-mode .ds-sheet-btn.money-only{display:none!important}
 .lk-n3 .lk-card-cap{font-size:11px;-webkit-line-clamp:1}
 .lk-n3 .lk-card-time{font-size:10px;padding:2px 6px;border-radius:9px}
 .lk-n2 .lk-card-cap{font-size:12.5px}
-.lk-card{position:relative;border-radius:26px;overflow:hidden;background:var(--surface2);aspect-ratio:1/1;cursor:pointer;box-shadow:0 6px 18px var(--card-shadow)}
-.lk-card img{width:100%;height:100%;object-fit:cover;display:block}
+.lk-card{position:relative;border-radius:26px;overflow:hidden;background:var(--surface2);cursor:pointer;box-shadow:0 6px 18px var(--card-shadow)}
+.lk-card img{width:100%;height:auto;min-height:120px;object-fit:cover;display:block}
 .lk-card-info{position:absolute;left:0;right:0;bottom:0;padding:34px 16px 14px;background:linear-gradient(to top,rgba(0,0,0,0.55),transparent);color:#fff;display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
 .lk-card-cap{font-size:14px;font-weight:600;line-height:1.3;min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .lk-card-time{font-size:12px;font-weight:600;opacity:.9;flex-shrink:0;background:rgba(0,0,0,0.35);border-radius:12px;padding:3px 9px}
@@ -2173,9 +2173,31 @@ function applyFrameAspect(fr,a){
   fr.style.setProperty('--fw',fw+'px');
   fr.style.setProperty('--fh',fh+'px');
 }
+// Đọc tỉ lệ rộng/cao trực tiếp từ phần đầu file JPEG (đồng bộ) để khung đúng hình ngay, không bị vuông lúc đầu
+function dataUrlAspect(u){
+  try{
+    if(!u||u.indexOf('data:image/jpeg')!==0)return 0;
+    const st=u.indexOf(',')+1;
+    let b64=u.slice(st,st+80000);b64=b64.slice(0,b64.length-(b64.length%4));
+    const bin=atob(b64);
+    let i=2;
+    while(i<bin.length-9){
+      if(bin.charCodeAt(i)!==0xFF){i++;continue;}
+      const m=bin.charCodeAt(i+1);
+      if(m>=0xC0&&m<=0xCF&&m!==0xC4&&m!==0xC8&&m!==0xCC){
+        const h=(bin.charCodeAt(i+5)<<8)|bin.charCodeAt(i+6);
+        const w=(bin.charCodeAt(i+7)<<8)|bin.charCodeAt(i+8);
+        return w&&h?w/h:0;
+      }
+      i+=2+((bin.charCodeAt(i+2)<<8)|bin.charCodeAt(i+3));
+    }
+  }catch(e){}
+  return 0;
+}
 function sizeFrameFor(frameId,photo){
   const fr=document.getElementById(frameId);if(!fr||!photo)return;
   fr.dataset.pid=photo.id;
+  if(!vAspectCache[photo.id]){const a0=dataUrlAspect(photo.dataUrl);if(a0>0)vAspectCache[photo.id]=a0;}
   const c=vAspectCache[photo.id];
   if(c){applyFrameAspect(fr,c);return;}
   applyFrameAspect(fr,1);
