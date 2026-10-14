@@ -2162,9 +2162,9 @@ function layoutViewerStage(){
   st.style.setProperty('--step',(bw+12)+'px');
   resizeAllViewerFrames();
 }
-// Mọi khung ảnh trong trình xem có CÙNG kích thước dọc (rộng/cao ≈ 0.69, giống ảnh chụp từ khung camera).
-// Ảnh khác tỉ lệ (VD ảnh vuông chụp từ bản cũ) được cắt giữa cho vừa khung; mở toàn màn hình để xem đủ ảnh.
-const VIEW_ASPECT=0.69;
+// Mọi khung ảnh trong trình xem là hình vuông bo góc, cùng kích thước (rộng/cao = 1).
+// Ảnh dài được cắt giữa cho vừa khung; bấm vào ảnh để mở toàn màn hình xem đầy đủ.
+const VIEW_ASPECT=1;
 function vFitBox(a){
   const st=document.getElementById('viewer-stage');
   const bw=parseFloat(st.style.getPropertyValue('--bw'))||300,bh=parseFloat(st.style.getPropertyValue('--bh'))||300;
